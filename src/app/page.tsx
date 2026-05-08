@@ -1,65 +1,392 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useState } from "react";
+import { db } from "@/lib/firebase";
+import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp } from "firebase/firestore";
+
+interface Sport {
+  id: string;
+  name: string;
+  waitingTime: number;
+  location: string;
+  description?: string;
+  updatedAt: any;
+}
+
+interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: any;
+}
+
+interface Review {
+  id: string;
+  text: string;
+  createdAt: any;
+}
+
+export default function UserPage() {
+  const [sports, setSports] = useState<Sport[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // タップして開いている種目のIDを管理するステート
+  const [expandedSportId, setExpandedSportId] = useState<string | null>(null);
+
+  // 口コミ投稿フォーム用のステート
+  const [newReviewText, setNewReviewText] = useState("");
+  const [userPasscode, setUserPasscode] = useState("");
+  const [reviewStatus, setReviewStatus] = useState("");
+
+  // 参加者用の口コミ投稿パスコード
+  const USER_PASSCODE = "tsuku2026";
+
+  const formatTime = (timestamp: any) => {
+    if (!timestamp) return "---";
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return date.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
+  };
+
+  useEffect(() => {
+    const qSports = query(collection(db, "sports"), orderBy("name", "asc"));
+    const unsubSports = onSnapshot(qSports, (snapshot) => {
+      const sportsData: Sport[] = [];
+      snapshot.forEach((doc) => {
+        sportsData.push({ id: doc.id, ...doc.data() } as Sport);
+      });
+      setSports(sportsData);
+    });
+
+    const qAnnouncements = query(collection(db, "announcements"), orderBy("createdAt", "desc"));
+    const unsubAnnouncements = onSnapshot(qAnnouncements, (snapshot) => {
+      const announcementsData: Announcement[] = [];
+      snapshot.forEach((doc) => {
+        announcementsData.push({ id: doc.id, ...doc.data() } as Announcement);
+      });
+      setAnnouncements(announcementsData);
+    });
+
+    // 口コミデータのリアルタイム監視
+    const qReviews = query(collection(db, "reviews"), orderBy("createdAt", "desc"));
+    const unsubReviews = onSnapshot(qReviews, (snapshot) => {
+      const reviewsData: Review[] = [];
+      snapshot.forEach((doc) => {
+        reviewsData.push({ id: doc.id, ...doc.data() } as Review);
+      });
+      setReviews(reviewsData);
+      setLoading(false);
+    });
+
+    return () => {
+      unsubSports();
+      unsubAnnouncements();
+      unsubReviews();
+    };
+  }, []);
+
+  // アコーディオンの開閉を切り替える関数
+  const toggleExpand = (id: string) => {
+    setExpandedSportId(expandedSportId === id ? null : id);
+  };
+
+  const handlePostReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newReviewText.trim()) {
+      alert("口コミ内容を入力してください。");
+      return;
+    }
+
+    if (userPasscode !== USER_PASSCODE) {
+      alert("❌ パスコードが正しくありません。");
+      return;
+    }
+
+    setReviewStatus("送信中...");
+    try {
+      await addDoc(collection(db, "reviews"), {
+        text: newReviewText,
+        createdAt: serverTimestamp(),
+      });
+      setNewReviewText("");
+      setUserPasscode("");
+      setReviewStatus("🎉 口コミを投稿しました！");
+      setTimeout(() => setReviewStatus(""), 3000);
+    } catch (error) {
+      console.error(error);
+      setReviewStatus("❌ 送信に失敗しました。");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", fontFamily: "sans-serif", color: "#5a2575" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ border: "4px solid #f3f3f3", borderTop: "4px solid #5a2575", borderRadius: "50%", width: "40px", height: "40px", animation: "spin 1s linear infinite", margin: "0 auto 15px auto" }}></div>
+          <p style={{ fontWeight: "bold" }}>情報を読み込み中...</p>
+        </div>
+        <style jsx global>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+    <div style={{ backgroundColor: "#f7f9fc", minHeight: "100vh", fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif" }}>
+      {/* ヘッダー */}
+      <header style={{ backgroundColor: "#5a2575", color: "white", padding: "24px 16px", textAlign: "center", boxShadow: "0 4px 12px rgba(90, 37, 117, 0.2)", borderRadius: "0 0 20px 20px" }}>
+        <h1 style={{ fontSize: "22px", fontWeight: "800", margin: 0, letterSpacing: "1px" }}>
+          🏆 Tsukuba Sports Day
+        </h1>
+        <p style={{ fontSize: "12px", opacity: 0.9, margin: "6px 0 0 0", fontWeight: "500" }}>
+          リアルタイム待ち時間 ＆ 会場ガイド
+        </p>
+      </header>
+
+      <main style={{ maxWidth: "500px", margin: "0 auto", padding: "20px 16px 40px 16px" }}>
+        
+        {/* 会場マップセクション */}
+        <section style={{ marginBottom: "28px", backgroundColor: "white", borderRadius: "16px", padding: "16px", boxShadow: "0 4px 12px rgba(0,0,0,0.03)", border: "1px solid #e2e8f0" }}>
+          <h2 style={{ fontSize: "15px", color: "#2d3748", fontWeight: "700", margin: "0 0 12px 0", borderBottom: "2px solid #cbd5e0", paddingBottom: "6px" }}>
+            🗺️ 会場エリアマップ
+          </h2>
+          <div style={{ width: "100%", borderRadius: "12px", overflow: "hidden", border: "1px solid #edf2f7" }}>
+            {/* 💡 ここを "/map.jpg" に書き換えました */}
+            <img 
+              src="/map.jpg" 
+              alt="スポーツ・デー 会場マップ"
+              style={{ width: "100%", height: "auto", display: "block" }}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+          </div>
+          <p style={{ fontSize: "10px", color: "#718096", margin: "8px 0 0 0", lineHeight: "1.4" }}>
+            ※雨天の場合、会場や一部の種目が変更になります。また、諸事情により各種目の位置が変更になる場合があります。
+          </p>
+        </section>
+
+        {/* 📢 アナウンスセクション */}
+        <section style={{ marginBottom: "28px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", borderBottom: "2px solid #5a2575", paddingBottom: "6px" }}>
+            <h2 style={{ fontSize: "15px", color: "#5a2575", fontWeight: "700", margin: 0 }}>
+              📢 運営からのお知らせ
+            </h2>
+            <span style={{ fontSize: "10px", backgroundColor: "#e9d8fd", color: "#5a2575", padding: "2px 8px", borderRadius: "10px", fontWeight: "bold" }}>LIVE</span>
+          </div>
+          
+          {announcements.length === 0 ? (
+            <div style={{ backgroundColor: "white", borderRadius: "12px", padding: "20px", textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+              <p style={{ color: "#a0aec0", fontSize: "13px", margin: 0 }}>現在、新しいお知らせはありません。</p>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {announcements.map((ann) => (
+                <div key={ann.id} style={{ backgroundColor: "white", borderRadius: "12px", padding: "14px 16px", boxShadow: "0 4px 10px rgba(0,0,0,0.03)", borderLeft: "5px solid #5a2575" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "4px" }}>
+                    <h3 style={{ fontSize: "14px", fontWeight: "700", color: "#1a202c", margin: 0 }}>{ann.title}</h3>
+                    <span style={{ fontSize: "10px", color: "#a0aec0" }}>{formatTime(ann.createdAt)}</span>
+                  </div>
+                  <p style={{ fontSize: "12px", color: "#4a5568", margin: 0, lineHeight: "1.5", whiteSpace: "pre-wrap" }}>
+                    {ann.content}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* ⏱ 各アトラクション情報セクション */}
+        <section style={{ marginBottom: "32px" }}>
+          <div style={{ borderBottom: "2px solid #2d3748", paddingBottom: "6px", marginBottom: "16px" }}>
+            <h2 style={{ fontSize: "15px", color: "#2d3748", fontWeight: "700", margin: 0 }}>
+              ⏱ 各アトラクション情報
+            </h2>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            {sports.map((sport) => {
+              let statusColor = "#38a169";
+              let statusText = "スムーズ";
+              let bgLight = "#f0fff4";
+              if (sport.waitingTime > 20) {
+                statusColor = "#e53e3e";
+                statusText = "混雑";
+                bgLight = "#fff5f5";
+              } else if (sport.waitingTime > 0) {
+                statusColor = "#dd6b20";
+                statusText = "やや混雑";
+                bgLight = "#fffaf0";
+              }
+
+              // 口コミ自動フィルタリング
+              const filteredReviews = reviews.filter(rev => 
+                rev.text.toLowerCase().includes(sport.name.toLowerCase())
+              );
+
+              // 開閉状態の判定
+              const isExpanded = expandedSportId === sport.id;
+
+              return (
+                <div
+                  key={sport.id}
+                  style={{
+                    backgroundColor: "white",
+                    borderRadius: "16px",
+                    overflow: "hidden",
+                    boxShadow: "0 6px 15px rgba(0,0,0,0.04)",
+                    border: isExpanded ? "1.5px solid #5a2575" : "1px solid #e2e8f0",
+                    padding: "16px",
+                    transition: "all 0.2s ease-in-out"
+                  }}
+                >
+                  {/* ヘッダーエリア（タップ可能な領域） */}
+                  <div 
+                    onClick={() => toggleExpand(sport.id)}
+                    style={{ 
+                      display: "flex", 
+                      justifyContent: "space-between", 
+                      alignItems: "flex-start", 
+                      cursor: "pointer",
+                      userSelect: "none"
+                    }}
+                  >
+                    <div style={{ flex: 1, paddingRight: "8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a202c", margin: 0 }}>{sport.name}</h3>
+                        <span style={{ fontSize: "10px", color: "#a0aec0" }}>
+                          {isExpanded ? "▲ 閉じる" : "▼ タップで詳細"}
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", gap: "6px", alignItems: "center", marginTop: "8px" }}>
+                        <span style={{ fontSize: "11px", backgroundColor: "#f7fafc", border: "1px solid #e2e8f0", padding: "3px 8px", borderRadius: "20px", color: "#4a5568", fontWeight: "500" }}>
+                          📍 {sport.location}
+                        </span>
+                        <span style={{ fontSize: "11px", backgroundColor: bgLight, color: statusColor, padding: "3px 8px", borderRadius: "20px", fontWeight: "700" }}>
+                          {statusText}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "flex-end" }}>
+                        <span style={{ fontSize: "32px", fontWeight: "800", color: statusColor, lineHeight: "1" }}>
+                          {sport.waitingTime}
+                        </span>
+                        <span style={{ fontSize: "11px", marginLeft: "2px", color: "#718096", fontWeight: "bold" }}>分</span>
+                      </div>
+                      <span style={{ fontSize: "9px", color: "#a0aec0", display: "block", marginTop: "4px" }}>
+                        更新: {formatTime(sport.updatedAt)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 開閉アコーディオンの中身（紹介文と口コミ） */}
+                  {isExpanded && (
+                    <div style={{ animation: "fadeIn 0.25s ease-out" }}>
+                      {/* 紹介文 */}
+                      {sport.description && (
+                        <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px dashed #edf2f7", fontSize: "12px", color: "#4a5568", lineHeight: "1.5" }}>
+                          <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{sport.description}</p>
+                        </div>
+                      )}
+
+                      {/* 種目ごとの口コミ集約 */}
+                      <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #edf2f7" }}>
+                        <span style={{ fontSize: "11px", fontWeight: "bold", color: "#5a2575", display: "block", marginBottom: "8px" }}>
+                          💬 参加者のリアルな口コミ ({filteredReviews.length}件)
+                        </span>
+                        
+                        {filteredReviews.length === 0 ? (
+                          <p style={{ color: "#a0aec0", fontSize: "11px", margin: "4px 0 0 0", fontStyle: "italic" }}>
+                            現在、この種目に関するつぶやきはありません。下の掲示板から最初のつぶやきを投稿してみよう！
+                          </p>
+                        ) : (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                            {filteredReviews.map((rev) => (
+                              <div key={rev.id} style={{ backgroundColor: "#fbf7ff", padding: "8px 12px", borderRadius: "8px", border: "1px solid #f3ebfa" }}>
+                                <p style={{ fontSize: "11px", color: "#2d3748", margin: "0 0 2px 0", lineHeight: "1.4" }}>
+                                  {rev.text}
+                                </p>
+                                <span style={{ fontSize: "9px", color: "#a0aec0" }}>
+                                  {formatTime(rev.createdAt)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* 💬 みんなの口コミ・つぶやき投稿掲示板 */}
+        <section style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px", boxShadow: "0 4px 12px rgba(90, 37, 117, 0.05)", border: "1.5px solid #e9d8fd" }}>
+          <h2 style={{ fontSize: "15px", color: "#5a2575", fontWeight: "700", margin: "0 0 4px 0", display: "flex", alignItems: "center", gap: "6px" }}>
+            💬 みんなの感想・つぶやき掲示板
+          </h2>
+          <p style={{ fontSize: "11px", color: "#718096", margin: "0 0 14px 0" }}>
+            本文中に<strong>「種目名」</strong>を入れると、上のアトラクション紹介の下にも自動で表示されます！
+          </p>
+
+          <form onSubmit={handlePostReview} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <textarea
+              placeholder="つぶやきを入力（例：バブルサッカーめちゃくちゃ楽しかった！）"
+              value={newReviewText}
+              onChange={(e) => setNewReviewText(e.target.value)}
+              rows={3}
+              style={{ padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e0", fontSize: "13px", resize: "none", outline: "none", color: "#1a202c", backgroundColor: "white" }}
+            />
+            <div style={{ display: "flex", gap: "8px" }}>
+              <input
+                type="password"
+                placeholder="掲示板用パスコード"
+                value={userPasscode}
+                onChange={(e) => setUserPasscode(e.target.value)}
+                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e0", fontSize: "13px", flex: 1, textAlign: "center", color: "#1a202c", backgroundColor: "white" }}
+              />
+              <button
+                type="submit"
+                style={{ padding: "10px 16px", backgroundColor: "#5a2575", color: "white", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", fontSize: "13px" }}
+              >
+                投稿する
+              </button>
+            </div>
+          </form>
+          {reviewStatus && <p style={{ marginTop: "10px", fontWeight: "bold", color: "#5a2575", textAlign: "center", fontSize: "12px" }}>{reviewStatus}</p>}
+
+          {/* 全体つぶやき */}
+          <div style={{ marginTop: "16px", paddingTop: "12px", borderTop: "1px solid #edf2f7" }}>
+            <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4a5568", display: "block", marginBottom: "8px" }}>最新のつぶやき：</span>
+            {reviews.length === 0 ? (
+              <p style={{ color: "#a0aec0", fontSize: "11px", margin: 0 }}>まだ投稿はありません。最初の声を届けよう！</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {reviews.slice(0, 3).map((rev) => (
+                  <div key={rev.id} style={{ backgroundColor: "#f7fafc", borderRadius: "8px", padding: "8px 12px", border: "1px solid #e2e8f0" }}>
+                    <p style={{ fontSize: "12px", color: "#2d3748", margin: "0 0 2px 0", lineHeight: "1.4" }}>{rev.text}</p>
+                    <span style={{ fontSize: "9px", color: "#a0aec0" }}>{formatTime(rev.createdAt)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
       </main>
+
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }
