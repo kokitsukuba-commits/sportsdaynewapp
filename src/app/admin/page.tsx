@@ -226,8 +226,8 @@ export default function AdminPage() {
     borderRadius: "6px",
     border: "1px solid #cbd5e0",
     fontSize: "13px",
-    color: "#1a202c",       // 👈 文字色を黒に固定
-    backgroundColor: "white" // 👈 背景を白に固定
+    color: "#1a202c",
+    backgroundColor: "white"
   };
 
   if (!isAuthenticated) {
@@ -242,7 +242,7 @@ export default function AdminPage() {
               placeholder="運営パスコードを入力" 
               value={passcode} 
               onChange={(e) => setPasscode(e.target.value)} 
-              style={{ padding: "14px", borderRadius: "10px", border: "1px solid #cbd5e0", fontSize: "16px", textAlign: "center", color: "#1a202c", backgroundColor: "white" }} /* 👈 ここも色を固定 */
+              style={{ padding: "14px", borderRadius: "10px", border: "1px solid #cbd5e0", fontSize: "16px", textAlign: "center", color: "#1a202c", backgroundColor: "white" }}
             />
             <button type="submit" style={{ padding: "14px", backgroundColor: "#5a2575", color: "white", border: "none", borderRadius: "10px", fontWeight: "bold", cursor: "pointer" }}>ログイン</button>
           </form>
@@ -304,10 +304,11 @@ export default function AdminPage() {
         <section style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px", border: "1px solid #e2e8f0", marginBottom: "24px" }}>
           <h2 style={{ fontSize: "15px", fontWeight: "700", color: "#2d3748", marginTop: 0, marginBottom: "12px" }}>📢 お知らせ配信</h2>
           <form onSubmit={handlePostAnnouncement} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            <input type="text" placeholder="タイトル" value={announceTitle} onChange={(e) => setNewSportName(e.target.value)} style={inputStyle} />
+            <input type="text" placeholder="タイトル" value={announceTitle} onChange={(e) => setAnnounceTitle(e.target.value)} style={inputStyle} />
             <textarea placeholder="本文..." value={announceContent} onChange={(e) => setAnnounceContent(e.target.value)} rows={2} style={{ ...inputStyle, resize: "none" }} />
             <button type="submit" style={{ padding: "10px", backgroundColor: "#3182ce", color: "white", border: "none", borderRadius: "6px", fontWeight: "bold" }}>配信</button>
           </form>
+          {postStatus && <p style={{ marginTop: "10px", color: "#3182ce", textAlign: "center", fontSize: "12px" }}>{postStatus}</p>}
         </section>
 
         {/* 💬 口コミ管理 */}

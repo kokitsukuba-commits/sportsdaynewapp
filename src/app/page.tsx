@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link"; // 👈 画面遷移用に追加
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 
 interface Sport {
   id: string;
@@ -34,14 +35,6 @@ export default function UserPage() {
 
   // タップして開いている種目のIDを管理するステート
   const [expandedSportId, setExpandedSportId] = useState<string | null>(null);
-
-  // 口コミ投稿フォーム用のステート
-  const [newReviewText, setNewReviewText] = useState("");
-  const [userPasscode, setUserPasscode] = useState("");
-  const [reviewStatus, setReviewStatus] = useState("");
-
-  // 参加者用の口コミ投稿パスコード
-  const USER_PASSCODE = "tsuku2026";
 
   const formatTime = (timestamp: any) => {
     if (!timestamp) return "---";
@@ -91,34 +84,6 @@ export default function UserPage() {
     setExpandedSportId(expandedSportId === id ? null : id);
   };
 
-  const handlePostReview = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newReviewText.trim()) {
-      alert("口コミ内容を入力してください。");
-      return;
-    }
-
-    if (userPasscode !== USER_PASSCODE) {
-      alert("❌ パスコードが正しくありません。");
-      return;
-    }
-
-    setReviewStatus("送信中...");
-    try {
-      await addDoc(collection(db, "reviews"), {
-        text: newReviewText,
-        createdAt: serverTimestamp(),
-      });
-      setNewReviewText("");
-      setUserPasscode("");
-      setReviewStatus("🎉 口コミを投稿しました！");
-      setTimeout(() => setReviewStatus(""), 3000);
-    } catch (error) {
-      console.error(error);
-      setReviewStatus("❌ 送信に失敗しました。");
-    }
-  };
-
   if (loading) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", fontFamily: "sans-serif", color: "#5a2575" }}>
@@ -137,7 +102,7 @@ export default function UserPage() {
   }
 
   return (
-    <div style={{ backgroundColor: "#f7f9fc", minHeight: "100vh", fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif" }}>
+    <div style={{ backgroundColor: "#f7f9fc", minHeight: "100vh", fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif", position: "relative", paddingBottom: "100px" }}>
       {/* ヘッダー */}
       <header style={{ backgroundColor: "#5a2575", color: "white", padding: "24px 16px", textAlign: "center", boxShadow: "0 4px 12px rgba(90, 37, 117, 0.2)", borderRadius: "0 0 20px 20px" }}>
         <h1 style={{ fontSize: "22px", fontWeight: "800", margin: 0, letterSpacing: "1px" }}>
@@ -156,7 +121,6 @@ export default function UserPage() {
             🗺️ 会場エリアマップ
           </h2>
           <div style={{ width: "100%", borderRadius: "12px", overflow: "hidden", border: "1px solid #edf2f7" }}>
-            {/* 💡 ここを "/map.jpg" に書き換えました */}
             <img 
               src="/map.jpg" 
               alt="スポーツ・デー 会場マップ"
@@ -226,7 +190,6 @@ export default function UserPage() {
                 rev.text.toLowerCase().includes(sport.name.toLowerCase())
               );
 
-              // 開閉状態の判定
               const isExpanded = expandedSportId === sport.id;
 
               return (
@@ -242,7 +205,6 @@ export default function UserPage() {
                     transition: "all 0.2s ease-in-out"
                   }}
                 >
-                  {/* ヘッダーエリア（タップ可能な領域） */}
                   <div 
                     onClick={() => toggleExpand(sport.id)}
                     style={{ 
@@ -283,17 +245,14 @@ export default function UserPage() {
                     </div>
                   </div>
 
-                  {/* 開閉アコーディオンの中身（紹介文と口コミ） */}
                   {isExpanded && (
                     <div style={{ animation: "fadeIn 0.25s ease-out" }}>
-                      {/* 紹介文 */}
                       {sport.description && (
                         <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px dashed #edf2f7", fontSize: "12px", color: "#4a5568", lineHeight: "1.5" }}>
                           <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{sport.description}</p>
                         </div>
                       )}
 
-                      {/* 種目ごとの口コミ集約 */}
                       <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #edf2f7" }}>
                         <span style={{ fontSize: "11px", fontWeight: "bold", color: "#5a2575", display: "block", marginBottom: "8px" }}>
                           💬 参加者のリアルな口コミ ({filteredReviews.length}件)
@@ -301,7 +260,7 @@ export default function UserPage() {
                         
                         {filteredReviews.length === 0 ? (
                           <p style={{ color: "#a0aec0", fontSize: "11px", margin: "4px 0 0 0", fontStyle: "italic" }}>
-                            現在、この種目に関するつぶやきはありません。下の掲示板から最初のつぶやきを投稿してみよう！
+                            現在、この種目に関するつぶやきはありません。右下の＋ボタンから最初のつぶやきを投稿してみよう！
                           </p>
                         ) : (
                           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -326,60 +285,48 @@ export default function UserPage() {
           </div>
         </section>
 
-        {/* 💬 みんなの口コミ・つぶやき投稿掲示板 */}
-        <section style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px", boxShadow: "0 4px 12px rgba(90, 37, 117, 0.05)", border: "1.5px solid #e9d8fd" }}>
-          <h2 style={{ fontSize: "15px", color: "#5a2575", fontWeight: "700", margin: "0 0 4px 0", display: "flex", alignItems: "center", gap: "6px" }}>
-            💬 みんなの感想・つぶやき掲示板
+        {/* 💬 最新のつぶやき簡易タイムライン（投稿フォームは削除しました） */}
+        <section style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px", boxShadow: "0 4px 12px rgba(90, 37, 117, 0.05)", border: "1px solid #e2e8f0" }}>
+          <h2 style={{ fontSize: "15px", color: "#5a2575", fontWeight: "700", margin: "0 0 12px 0" }}>
+            💬 みんなの最新のつぶやき
           </h2>
-          <p style={{ fontSize: "11px", color: "#718096", margin: "0 0 14px 0" }}>
-            本文中に<strong>「種目名」</strong>を入れると、上のアトラクション紹介の下にも自動で表示されます！
-          </p>
-
-          <form onSubmit={handlePostReview} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            <textarea
-              placeholder="つぶやきを入力（例：バブルサッカーめちゃくちゃ楽しかった！）"
-              value={newReviewText}
-              onChange={(e) => setNewReviewText(e.target.value)}
-              rows={3}
-              style={{ padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e0", fontSize: "13px", resize: "none", outline: "none", color: "#1a202c", backgroundColor: "white" }}
-            />
-            <div style={{ display: "flex", gap: "8px" }}>
-              <input
-                type="password"
-                placeholder="掲示板用パスコード"
-                value={userPasscode}
-                onChange={(e) => setUserPasscode(e.target.value)}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e0", fontSize: "13px", flex: 1, textAlign: "center", color: "#1a202c", backgroundColor: "white" }}
-              />
-              <button
-                type="submit"
-                style={{ padding: "10px 16px", backgroundColor: "#5a2575", color: "white", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", fontSize: "13px" }}
-              >
-                投稿する
-              </button>
+          {reviews.length === 0 ? (
+            <p style={{ color: "#a0aec0", fontSize: "11px", margin: 0 }}>まだ投稿はありません。最初の声を届けよう！</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {reviews.slice(0, 5).map((rev) => ( // 👈 簡易的に5件までタイムラインに表示
+                <div key={rev.id} style={{ backgroundColor: "#f7fafc", borderRadius: "8px", padding: "8px 12px", border: "1px solid #e2e8f0" }}>
+                  <p style={{ fontSize: "12px", color: "#2d3748", margin: "0 0 2px 0", lineHeight: "1.4" }}>{rev.text}</p>
+                  <span style={{ fontSize: "9px", color: "#a0aec0" }}>{formatTime(rev.createdAt)}</span>
+                </div>
+              ))}
             </div>
-          </form>
-          {reviewStatus && <p style={{ marginTop: "10px", fontWeight: "bold", color: "#5a2575", textAlign: "center", fontSize: "12px" }}>{reviewStatus}</p>}
-
-          {/* 全体つぶやき */}
-          <div style={{ marginTop: "16px", paddingTop: "12px", borderTop: "1px solid #edf2f7" }}>
-            <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4a5568", display: "block", marginBottom: "8px" }}>最新のつぶやき：</span>
-            {reviews.length === 0 ? (
-              <p style={{ color: "#a0aec0", fontSize: "11px", margin: 0 }}>まだ投稿はありません。最初の声を届けよう！</p>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {reviews.slice(0, 3).map((rev) => (
-                  <div key={rev.id} style={{ backgroundColor: "#f7fafc", borderRadius: "8px", padding: "8px 12px", border: "1px solid #e2e8f0" }}>
-                    <p style={{ fontSize: "12px", color: "#2d3748", margin: "0 0 2px 0", lineHeight: "1.4" }}>{rev.text}</p>
-                    <span style={{ fontSize: "9px", color: "#a0aec0" }}>{formatTime(rev.createdAt)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          )}
         </section>
-
       </main>
+
+      {/* ➕ 右下に浮かぶ新規投稿ボタン */}
+      <Link href="/new" style={{
+        position: "fixed",
+        bottom: "24px",
+        right: "24px",
+        backgroundColor: "#5a2575",
+        color: "white",
+        width: "56px",
+        height: "56px",
+        borderRadius: "50%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "28px",
+        boxShadow: "0 4px 16px rgba(90, 37, 117, 0.4)",
+        cursor: "pointer",
+        textDecoration: "none",
+        zIndex: 100,
+        fontWeight: "300"
+      }}>
+        ＋
+      </Link>
 
       <style jsx global>{`
         @keyframes fadeIn {
