@@ -1,342 +1,192 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { db } from "@/lib/firebase";
-import { collection, onSnapshot, query, orderBy, doc, updateDoc, addDoc, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
-
-interface Sport {
-  id: string;
-  name: string;
-  waitingTime: number;
-  location: string;
-  description?: string;
-  updatedAt: any;
-}
-
-interface Announcement {
-  id: string;
-  title: string;
-  content: string;
-  createdAt: any;
-}
-
-interface Review {
-  id: string;
-  text: string;
-  createdAt: any;
-}
+import { useState, useEffect } from 'react';
+import { db } from '@/lib/firebase';
+import { collection, addDoc, getDocs, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 
 export default function AdminPage() {
-  const [passcode, setPasscode] = useState("");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authError, setAuthError] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminCodeInput, setAdminCodeInput] = useState('');
+  const [error, setError] = useState('');
 
-  const [sports, setSports] = useState<Sport[]>([]);
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [isOnline, setIsOnline] = useState(true);
+  // 運営メンバーが入力する正しい管理者コード（ここを自由に変更してください）
+  const CORRECT_ADMIN_CODE = 'tsuku2026';
 
-  // 新規追加用
-  const [newSportName, setNewSportName] = useState("");
-  const [newSportLocation, setNewSportLocation] = useState("");
-  const [newSportDesc, setNewSportDesc] = useState("");
-  const [sportAddStatus, setSportAddStatus] = useState("");
+  // お知らせ用のステート
+  const [newsTitle, setNewsTitle] = useState('');
+  const [newsContent, setNewsContent] = useState('');
 
-  const [announceTitle, setAnnounceTitle] = useState("");
-  const [announceContent, setAnnounceContent] = useState("");
-  const [postStatus, setPostStatus] = useState("");
+  // アトラクション混雑状況用のステート
+  const [attractions, setAttractions] = useState<any[]>([]);
 
-  const CORRECT_PASSCODE = "tsukuba2026";
-
-  useEffect(() => {
-    const savedAuth = sessionStorage.getItem("sportsday_admin_auth");
-    if (savedAuth === "true") {
-      setIsAuthenticated(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-    setIsOnline(navigator.onLine);
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
-  }, []);
-
+  // 1. 簡易ログイン処理
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (passcode === CORRECT_PASSCODE) {
-      setIsAuthenticated(true);
-      sessionStorage.setItem("sportsday_admin_auth", "true");
-      setAuthError("");
+    if (adminCodeInput === CORRECT_ADMIN_CODE) {
+      setIsAdmin(true);
+      setError('');
+      // ログイン成功時にアトラクション情報を取得
+      fetchAttractions();
     } else {
-      setAuthError("❌ パスコードが正しくありません。");
+      setError('管理者コードが正しくありません。');
     }
   };
 
-  useEffect(() => {
-    if (!isAuthenticated) return;
+  // 2. アトラクション一覧の取得
+  const fetchAttractions = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'attractions'));
+      const list = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setAttractions(list);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-    const qSports = query(collection(db, "sports"), orderBy("name", "asc"));
-    const unsubscribeSports = onSnapshot(qSports, (snapshot) => {
-      const sportsData: Sport[] = [];
-      snapshot.forEach((doc) => {
-        sportsData.push({ id: doc.id, ...doc.data() } as Sport);
-      });
-      setSports(sportsData);
-    });
-
-    const qAnnouncements = query(collection(db, "announcements"), orderBy("createdAt", "desc"));
-    const unsubscribeAnnouncements = onSnapshot(qAnnouncements, (snapshot) => {
-      const announcementsData: Announcement[] = [];
-      snapshot.forEach((doc) => {
-        announcementsData.push({ id: doc.id, ...doc.data() } as Announcement);
-      });
-      setAnnouncements(announcementsData);
-    });
-
-    // 管理画面で全口コミを同期
-    const qReviews = query(collection(db, "reviews"), orderBy("createdAt", "desc"));
-    const unsubscribeReviews = onSnapshot(qReviews, (snapshot) => {
-      const reviewsData: Review[] = [];
-      snapshot.forEach((doc) => {
-        reviewsData.push({ id: doc.id, ...doc.data() } as Review);
-      });
-      setReviews(reviewsData);
-      setLoading(false);
-    });
-
-    return () => {
-      unsubscribeSports();
-      unsubscribeAnnouncements();
-      unsubscribeReviews();
-    };
-  }, [isAuthenticated]);
-
-  const handleAddSport = async (e: React.FormEvent) => {
+  // 3. お知らせの投稿
+  const handlePostNews = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newSportName || !newSportLocation) {
-      alert("種目名と実施場所を入力してください。");
-      return;
-    }
-    setSportAddStatus("登録中...");
+    if (!newsTitle || !newsContent) return;
+
     try {
-      const sportId = newSportName.toLowerCase().replace(/\s+/g, "-");
-      await setDoc(doc(db, "sports", sportId), {
-        name: newSportName,
-        location: newSportLocation,
-        waitingTime: 0,
-        description: newSportDesc,
-        updatedAt: serverTimestamp(),
+      await addDoc(collection(db, 'news'), {
+        title: newsTitle,
+        content: newsContent,
+        createdAt: serverTimestamp()
       });
-      setNewSportName("");
-      setNewSportLocation("");
-      setNewSportDesc("");
-      setSportAddStatus("🎉 種目を登録しました！");
-      setTimeout(() => setSportAddStatus(""), 3000);
-    } catch (error) {
-      console.error(error);
+      alert('お知らせを投稿しました！');
+      setNewsTitle('');
+      setNewsContent('');
+    } catch (err) {
+      alert('投稿に失敗しました: ' + err);
     }
   };
 
-  const handleDeleteSport = async (id: string, name: string) => {
-    const confirmDelete = window.confirm(`【種目削除】「${name}」を完全に削除しますか？`);
-    if (!confirmDelete) return;
+  // 4. 混雑状況（待ち時間）の更新
+  const handleUpdateWaitTime = async (id: string, newTime: number) => {
     try {
-      await deleteDoc(doc(db, "sports", id));
-    } catch (error) {
-      console.error(error);
+      const docRef = doc(db, 'attractions', id);
+      await updateDoc(docRef, { waitTime: newTime });
+      alert('待ち時間を更新しました！');
+      fetchAttractions();
+    } catch (err) {
+      alert('更新に失敗しました: ' + err);
     }
   };
 
-  const handleUpdateWaitingTime = async (id: string, current: number, amount: number) => {
-    if (!isOnline) return;
-    const newTime = Math.max(0, current + amount);
-    setUpdatingId(id);
-    try {
-      await updateDoc(doc(db, "sports", id), {
-        waitingTime: newTime,
-        updatedAt: new Date(),
-      });
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setUpdatingId(null);
-    }
-  };
-
-  const handlePostAnnouncement = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isOnline) return;
-    if (!announceTitle || !announceContent) return;
-
-    const confirmPost = window.confirm("配信しますか？");
-    if (!confirmPost) return;
-
-    setPostStatus("投稿中...");
-    try {
-      await addDoc(collection(db, "announcements"), {
-        title: announceTitle,
-        content: announceContent,
-        createdAt: serverTimestamp(),
-      });
-      setAnnounceTitle("");
-      setAnnounceContent("");
-      setPostStatus("🎉 配信成功");
-      setTimeout(() => setPostStatus(""), 3000);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const handleDeleteAnnouncement = async (id: string, title: string) => {
-    if (!isOnline) return;
-    if (!window.confirm(`「${title}」を削除しますか？`)) return;
-    try {
-      await deleteDoc(doc(db, "announcements", id));
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const handleDeleteReview = async (id: string) => {
-    if (!window.confirm("⚠️ 不適切なつぶやきとして、この口コミを強制削除しますか？")) return;
-    try {
-      await deleteDoc(doc(db, "reviews", id));
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const formatTime = (timestamp: any) => {
-    if (!timestamp) return "---";
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
-  };
-
-  // 共通の入力欄用スタイル（文字色を黒、背景を白に固定）
-  const inputStyle: React.CSSProperties = {
-    padding: "10px",
-    borderRadius: "6px",
-    border: "1px solid #cbd5e0",
-    fontSize: "13px",
-    color: "#1a202c",
-    backgroundColor: "white"
-  };
-
-  if (!isAuthenticated) {
+  // ログイン前の画面
+  if (!isAdmin) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", backgroundColor: "#f7f9fc", fontFamily: "sans-serif" }}>
-        <div style={{ maxWidth: "380px", width: "100%", padding: "40px 30px", backgroundColor: "white", borderRadius: "20px", boxShadow: "0 10px 25px rgba(0,0,0,0.05)", textAlign: "center", border: "1px solid #e2e8f0" }}>
-          <div style={{ fontSize: "40px", marginBottom: "15px" }}>🔐</div>
-          <h1 style={{ fontSize: "20px", fontWeight: "800", color: "#5a2575", marginBottom: "8px" }}>スポーツデイ 総合管理</h1>
-          <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            <input 
-              type="password" 
-              placeholder="運営パスコードを入力" 
-              value={passcode} 
-              onChange={(e) => setPasscode(e.target.value)} 
-              style={{ padding: "14px", borderRadius: "10px", border: "1px solid #cbd5e0", fontSize: "16px", textAlign: "center", color: "#1a202c", backgroundColor: "white" }}
-            />
-            <button type="submit" style={{ padding: "14px", backgroundColor: "#5a2575", color: "white", border: "none", borderRadius: "10px", fontWeight: "bold", cursor: "pointer" }}>ログイン</button>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+        <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full">
+          <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">運営管理者ログイン</h1>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">管理者コード</label>
+              <input
+                type="password"
+                value={adminCodeInput}
+                onChange={(e) => setAdminCodeInput(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                placeholder="コードを入力してください"
+              />
+            </div>
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+            <button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-200"
+            >
+              ログイン
+            </button>
           </form>
-          {authError && <p style={{ marginTop: "15px", color: "#e53e3e", fontSize: "13px" }}>{authError}</p>}
         </div>
       </div>
     );
   }
 
-  if (loading) {
-    return <div style={{ textAlign: "center", marginTop: "100px", color: "#5a2575", fontFamily: "sans-serif" }}>読み込み中...</div>;
-  }
-
+  // ログイン後の管理画面
   return (
-    <div style={{ backgroundColor: "#f7f9fc", minHeight: "100vh", fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif" }}>
-      <header style={{ backgroundColor: "#2d3748", color: "white", padding: "20px 16px", textAlign: "center", borderRadius: "0 0 16px 16px" }}>
-        <h1 style={{ fontSize: "20px", fontWeight: "800", margin: 0 }}>⚙️ Sports Day 運営ポータル</h1>
-        <p style={{ fontSize: "11px", opacity: 0.8, margin: "4px 0 0 0" }}>管理・モデレーションモード</p>
-      </header>
+    <div className="min-h-screen bg-gray-50 p-6 text-black">
+      <div className="max-w-4xl mx-auto space-y-8">
+        <div className="flex justify-between items-center border-b pb-4">
+          <h1 className="text-3xl font-bold">スポーツデー 運営管理画面</h1>
+          <button
+            onClick={() => setIsAdmin(false)}
+            className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
+          >
+            ログアウト
+          </button>
+        </div>
 
-      <main style={{ maxWidth: "500px", margin: "0 auto", padding: "20px 16px 40px 16px" }}>
-
-        {/* 新規種目登録 */}
-        <section style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px", border: "1px solid #e2e8f0", marginBottom: "24px" }}>
-          <h2 style={{ fontSize: "15px", fontWeight: "700", color: "#2d3748", marginTop: 0, marginBottom: "12px" }}>➕ 新しい種目を登録</h2>
-          <form onSubmit={handleAddSport} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            <input type="text" placeholder="種目名（例：バブルサッカー）" value={newSportName} onChange={(e) => setNewSportName(e.target.value)} style={inputStyle} />
-            <input type="text" placeholder="実施場所" value={newSportLocation} onChange={(e) => setNewSportLocation(e.target.value)} style={inputStyle} />
-            <textarea placeholder="紹介文" value={newSportDesc} onChange={(e) => setNewSportDesc(e.target.value)} rows={2} style={{ ...inputStyle, resize: "none" }} />
-            <button type="submit" style={{ padding: "10px", backgroundColor: "#5a2575", color: "white", border: "none", borderRadius: "6px", fontWeight: "bold" }}>登録</button>
+        {/* お知らせ投稿フォーム */}
+        <section className="bg-white p-6 rounded-lg shadow-sm">
+          <h2 className="text-xl font-semibold mb-4">① お知らせの新規投稿</h2>
+          <form onSubmit={handlePostNews} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">タイトル</label>
+              <input
+                type="text"
+                value={newsTitle}
+                onChange={(e) => setNewsTitle(e.target.value)}
+                className="mt-1 w-full border rounded p-2"
+                placeholder="【重要】雨天によるスケジュール変更"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">内容</label>
+              <textarea
+                value={newsContent}
+                onChange={(e) => setNewsContent(e.target.value)}
+                className="mt-1 w-full border rounded p-2 h-24"
+                placeholder="変更内容の詳細を入力してください。"
+              />
+            </div>
+            <button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+              お知らせを配信
+            </button>
           </form>
-          {sportAddStatus && <p style={{ marginTop: "10px", color: "#5a2575", textAlign: "center", fontSize: "12px" }}>{sportAddStatus}</p>}
         </section>
 
-        {/* ⏱ 待ち時間＆種目の管理 */}
-        <section style={{ marginBottom: "24px" }}>
-          <h2 style={{ fontSize: "15px", fontWeight: "700", color: "#2d3748", marginBottom: "12px" }}>⏱ 待ち時間変更 ＆ 種目削除</h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {sports.map((sport) => (
-              <div key={sport.id} style={{ backgroundColor: "white", borderRadius: "16px", padding: "16px", border: "1px solid #e2e8f0" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+        {/* アトラクション待ち時間更新フォーム */}
+        <section className="bg-white p-6 rounded-lg shadow-sm">
+          <h2 className="text-xl font-semibold mb-4">② アトラクション混雑状況の更新</h2>
+          <div className="space-y-4">
+            {attractions.length === 0 ? (
+              <p className="text-gray-500 text-sm">アトラクションが登録されていません。（Firestoreの 'attractions' コレクションを確認してください）</p>
+            ) : (
+              attractions.map((attraction) => (
+                <div key={attraction.id} className="flex justify-between items-center border-b pb-2">
                   <div>
-                    <h4 style={{ fontSize: "14px", fontWeight: "700", margin: 0 }}>{sport.name}</h4>
-                    <span style={{ fontSize: "10px", color: "#718096" }}>📍 {sport.location}</span>
+                    <p className="font-medium text-lg">{attraction.name}</p>
+                    <p className="text-sm text-gray-500">現在の待ち時間: {attraction.waitTime}分</p>
                   </div>
-                  <button onClick={() => handleDeleteSport(sport.id, sport.name)} style={{ backgroundColor: "#fff5f5", color: "#e53e3e", border: "1px solid #fed7d7", borderRadius: "6px", padding: "4px 8px", fontSize: "11px", cursor: "pointer" }}>削除</button>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="number"
+                      defaultValue={attraction.waitTime}
+                      id={`time-${attraction.id}`}
+                      className="border rounded w-16 p-1 text-center"
+                    />
+                    <span className="text-sm">分</span>
+                    <button
+                      onClick={() => {
+                        const input = document.getElementById(`time-${attraction.id}`) as HTMLInputElement;
+                        handleUpdateWaitTime(attraction.id, Number(input.value));
+                      }}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                    >
+                      更新
+                    </button>
+                  </div>
                 </div>
-                <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "10px" }}>
-                  <button onClick={() => handleUpdateWaitingTime(sport.id, sport.waitingTime, -5)} disabled={updatingId === sport.id || sport.waitingTime === 0} style={{ width: "32px", height: "32px", borderRadius: "50%", border: "none", backgroundColor: "#fc8181", color: "white", fontSize: "18px" }}>-</button>
-                  <div style={{ minWidth: "40px", textAlign: "center" }}><span style={{ fontSize: "18px", fontWeight: "800" }}>{sport.waitingTime}</span>分</div>
-                  <button onClick={() => handleUpdateWaitingTime(sport.id, sport.waitingTime, 5)} disabled={updatingId === sport.id} style={{ width: "32px", height: "32px", borderRadius: "50%", border: "none", backgroundColor: "#68d391", color: "white", fontSize: "16px" }}>+</button>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </section>
-
-        {/* 📢 お知らせ配信 */}
-        <section style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px", border: "1px solid #e2e8f0", marginBottom: "24px" }}>
-          <h2 style={{ fontSize: "15px", fontWeight: "700", color: "#2d3748", marginTop: 0, marginBottom: "12px" }}>📢 お知らせ配信</h2>
-          <form onSubmit={handlePostAnnouncement} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            <input type="text" placeholder="タイトル" value={announceTitle} onChange={(e) => setAnnounceTitle(e.target.value)} style={inputStyle} />
-            <textarea placeholder="本文..." value={announceContent} onChange={(e) => setAnnounceContent(e.target.value)} rows={2} style={{ ...inputStyle, resize: "none" }} />
-            <button type="submit" style={{ padding: "10px", backgroundColor: "#3182ce", color: "white", border: "none", borderRadius: "6px", fontWeight: "bold" }}>配信</button>
-          </form>
-          {postStatus && <p style={{ marginTop: "10px", color: "#3182ce", textAlign: "center", fontSize: "12px" }}>{postStatus}</p>}
-        </section>
-
-        {/* 💬 口コミ管理 */}
-        <section style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px", border: "1px solid #e2e8f0", marginBottom: "24px" }}>
-          <h2 style={{ fontSize: "15px", fontWeight: "700", color: "#2d3748", marginTop: 0, marginBottom: "12px" }}>💬 投稿された口コミの管理</h2>
-          {reviews.length === 0 ? (
-            <p style={{ color: "#a0aec0", fontSize: "12px", textAlign: "center" }}>投稿された口コミはありません。</p>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {reviews.map((rev) => (
-                <div key={rev.id} style={{ backgroundColor: "#f7fafc", borderRadius: "8px", padding: "10px", border: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ flex: 1, marginRight: "10px" }}>
-                    <p style={{ fontSize: "12px", color: "#2d3748", margin: "0 0 4px 0" }}>{rev.text}</p>
-                    <span style={{ fontSize: "10px", color: "#a0aec0" }}>{formatTime(rev.createdAt)}</span>
-                  </div>
-                  <button
-                    onClick={() => handleDeleteReview(rev.id)}
-                    style={{ backgroundColor: "#fff5f5", color: "#e53e3e", border: "1px solid #fed7d7", borderRadius: "6px", padding: "4px 8px", fontSize: "11px", cursor: "pointer" }}
-                  >
-                    削除
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-      </main>
+      </div>
     </div>
   );
 }
