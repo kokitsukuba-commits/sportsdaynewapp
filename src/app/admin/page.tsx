@@ -30,9 +30,16 @@ interface Announcement {
   createdAt: any;
 }
 
+interface Review {
+  id: string;
+  text: string;
+  createdAt: any;
+}
+
 export default function AdminPage() {
   const [sports, setSports] = useState<Sport[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [passcode, setPasscode] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -72,9 +79,20 @@ export default function AdminPage() {
       setAnnouncements(announcementsData);
     });
 
+    // 3. 一般口コミ（つぶやき）のリアルタイム取得（新しい順）
+    const qReviews = query(collection(db, "reviews"), orderBy("createdAt", "desc"));
+    const unsubReviews = onSnapshot(qReviews, (snapshot) => {
+      const reviewsData: Review[] = [];
+      snapshot.forEach((doc) => {
+        reviewsData.push({ id: doc.id, ...doc.data() } as Review);
+      });
+      setReviews(reviewsData);
+    });
+
     return () => {
       unsubSports();
       unsubAnnouncements();
+      unsubReviews();
     };
   }, [isAuthenticated]);
 
@@ -120,6 +138,21 @@ export default function AdminPage() {
     } catch (error) {
       console.error(error);
       alert("お知らせの削除に失敗しました。");
+    }
+  };
+
+  // 🗑 一般つぶやき（口コミ）の削除
+  const handleDeleteReview = async (id: string, text: string) => {
+    // 確認ダイアログに表示する文字列を短く制限
+    const previewText = text.length > 20 ? text.substring(0, 20) + "..." : text;
+    if (!confirm(`本当にこのつぶやきを削除しますか？\n「${previewText}」`)) return;
+    
+    try {
+      await deleteDoc(doc(db, "reviews", id));
+      alert("つぶやきを削除しました。");
+    } catch (error) {
+      console.error(error);
+      alert("つぶやきの削除に失敗しました。");
     }
   };
 
@@ -206,7 +239,7 @@ export default function AdminPage() {
 
       <main style={{ maxWidth: "550px", margin: "0 auto", padding: "20px 16px" }}>
         
-        {/* 📢 お知らせ新規投稿＆管理セクション */}
+        {/* 📢 運営からのお知らせ管理セクション */}
         <section style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px", marginBottom: "24px", boxShadow: "0 4px 12px rgba(0,0,0,0.03)", border: "1px solid #cbd5e0" }}>
           <h2 style={{ fontSize: "15px", color: "#2d3748", fontWeight: "700", margin: "0 0 14px 0", borderBottom: "2px solid #5a2575", paddingBottom: "6px" }}>
             📢 運営からのお知らせ管理
@@ -245,7 +278,7 @@ export default function AdminPage() {
             {announcements.length === 0 ? (
               <p style={{ fontSize: "11px", color: "#718096", margin: 0 }}>現在投稿されているお知らせはありません。</p>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "200px", overflowY: "auto" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "180px", overflowY: "auto" }}>
                 {announcements.map((ann) => (
                   <div key={ann.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", backgroundColor: "#f7fafc", padding: "8px 12px", borderRadius: "6px", border: "1px solid #edf2f7" }}>
                     <div style={{ flex: 1, marginRight: "10px" }}>
@@ -262,6 +295,36 @@ export default function AdminPage() {
               </div>
             )}
           </div>
+        </section>
+
+        {/* 💬 一般つぶやき（口コミ）管理セクション（新規追加） */}
+        <section style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px", marginBottom: "24px", boxShadow: "0 4px 12px rgba(0,0,0,0.03)", border: "1px solid #cbd5e0" }}>
+          <h2 style={{ fontSize: "15px", color: "#2d3748", fontWeight: "700", margin: "0 0 14px 0", borderBottom: "2px solid #e2e8f0", paddingBottom: "6px" }}>
+            💬 参加者のつぶやき管理
+          </h2>
+          <p style={{ fontSize: "11px", color: "#718096", margin: "0 0 12px 0", lineHeight: "1.4" }}>
+            一般閲覧者が投稿した口コミ（つぶやき）が新しい順に表示されます。不適切な内容やいたずら投稿はここから削除できます。
+          </p>
+
+          {reviews.length === 0 ? (
+            <p style={{ fontSize: "11px", color: "#718096", margin: 0 }}>投稿されたつぶやきはありません。</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "250px", overflowY: "auto" }}>
+              {reviews.map((rev) => (
+                <div key={rev.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", backgroundColor: "#f7fafc", padding: "10px 12px", borderRadius: "6px", border: "1px solid #edf2f7" }}>
+                  <div style={{ flex: 1, marginRight: "12px" }}>
+                    <p style={{ fontSize: "12px", color: "#2d3748", margin: 0, whiteSpace: "pre-wrap", lineHeight: "1.4" }}>{rev.text}</p>
+                  </div>
+                  <button 
+                    onClick={() => handleDeleteReview(rev.id, rev.text)}
+                    style={{ padding: "4px 8px", backgroundColor: "#fff5f5", color: "#e53e3e", border: "1px solid #fed7d7", borderRadius: "4px", fontSize: "10px", cursor: "pointer", fontWeight: "bold", whiteSpace: "nowrap" }}
+                  >
+                    削除
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* ➕ 新規種目追加セクション */}
