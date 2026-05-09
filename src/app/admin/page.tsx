@@ -23,8 +23,16 @@ interface Sport {
   updatedAt: any;
 }
 
+interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: any;
+}
+
 export default function AdminPage() {
   const [sports, setSports] = useState<Sport[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [passcode, setPasscode] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -44,8 +52,9 @@ export default function AdminPage() {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    const q = query(collection(db, "sports"), orderBy("name", "asc"));
-    const unsub = onSnapshot(q, (snapshot) => {
+    // 1. 種目のリアルタイム取得
+    const qSports = query(collection(db, "sports"), orderBy("name", "asc"));
+    const unsubSports = onSnapshot(qSports, (snapshot) => {
       const sportsData: Sport[] = [];
       snapshot.forEach((doc) => {
         sportsData.push({ id: doc.id, ...doc.data() } as Sport);
@@ -53,7 +62,20 @@ export default function AdminPage() {
       setSports(sportsData);
     });
 
-    return () => unsub();
+    // 2. お知らせのリアルタイム取得（新しい順）
+    const qAnnouncements = query(collection(db, "announcements"), orderBy("createdAt", "desc"));
+    const unsubAnnouncements = onSnapshot(qAnnouncements, (snapshot) => {
+      const announcementsData: Announcement[] = [];
+      snapshot.forEach((doc) => {
+        announcementsData.push({ id: doc.id, ...doc.data() } as Announcement);
+      });
+      setAnnouncements(announcementsData);
+    });
+
+    return () => {
+      unsubSports();
+      unsubAnnouncements();
+    };
   }, [isAuthenticated]);
 
   // ログイン処理
@@ -86,6 +108,18 @@ export default function AdminPage() {
     } catch (error) {
       console.error(error);
       alert("❌ お知らせの投稿に失敗しました。");
+    }
+  };
+
+  // 🗑 お知らせの削除
+  const handleDeleteAnnouncement = async (id: string, title: string) => {
+    if (!confirm(`本当に「${title}」のお知らせを削除しますか？`)) return;
+    try {
+      await deleteDoc(doc(db, "announcements", id));
+      alert("お知らせを削除しました。");
+    } catch (error) {
+      console.error(error);
+      alert("お知らせの削除に失敗しました。");
     }
   };
 
@@ -172,12 +206,14 @@ export default function AdminPage() {
 
       <main style={{ maxWidth: "550px", margin: "0 auto", padding: "20px 16px" }}>
         
-        {/* 📢 お知らせ新規投稿セクション */}
+        {/* 📢 お知らせ新規投稿＆管理セクション */}
         <section style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px", marginBottom: "24px", boxShadow: "0 4px 12px rgba(0,0,0,0.03)", border: "1px solid #cbd5e0" }}>
           <h2 style={{ fontSize: "15px", color: "#2d3748", fontWeight: "700", margin: "0 0 14px 0", borderBottom: "2px solid #5a2575", paddingBottom: "6px" }}>
-            📢 運営からのお知らせを投稿
+            📢 運営からのお知らせ管理
           </h2>
-          <form onSubmit={handleAddAnnouncement} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          
+          {/* 新規お知らせ投稿フォーム */}
+          <form onSubmit={handleAddAnnouncement} style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "20px" }}>
             <div>
               <label style={{ fontSize: "11px", fontWeight: "bold", color: "#4a5568", display: "block", marginBottom: "4px" }}>タイトル</label>
               <input
@@ -199,9 +235,33 @@ export default function AdminPage() {
               />
             </div>
             <button type="submit" style={{ padding: "10px", backgroundColor: "#5a2575", color: "white", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", fontSize: "13px" }}>
-              お知らせを配信する
+              新しいお知らせを配信する
             </button>
           </form>
+
+          {/* 投稿済みお知らせ一覧と削除 */}
+          <div style={{ borderTop: "1px dashed #cbd5e0", paddingTop: "14px" }}>
+            <h3 style={{ fontSize: "12px", fontWeight: "bold", color: "#4a5568", marginBottom: "8px" }}>配信中のお知らせ一覧</h3>
+            {announcements.length === 0 ? (
+              <p style={{ fontSize: "11px", color: "#718096", margin: 0 }}>現在投稿されているお知らせはありません。</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "200px", overflowY: "auto" }}>
+                {announcements.map((ann) => (
+                  <div key={ann.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", backgroundColor: "#f7fafc", padding: "8px 12px", borderRadius: "6px", border: "1px solid #edf2f7" }}>
+                    <div style={{ flex: 1, marginRight: "10px" }}>
+                      <p style={{ fontSize: "12px", fontWeight: "bold", margin: 0, color: "#2d3748" }}>{ann.title}</p>
+                    </div>
+                    <button 
+                      onClick={() => handleDeleteAnnouncement(ann.id, ann.title)}
+                      style={{ padding: "4px 8px", backgroundColor: "#fff5f5", color: "#e53e3e", border: "1px solid #fed7d7", borderRadius: "4px", fontSize: "10px", cursor: "pointer", fontWeight: "bold", whiteSpace: "nowrap" }}
+                    >
+                      削除
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </section>
 
         {/* ➕ 新規種目追加セクション */}
