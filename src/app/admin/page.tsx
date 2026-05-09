@@ -1,192 +1,252 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { useEffect, useState } from "react";
+import { db } from "@/lib/firebase";
+import { 
+  collection, 
+  onSnapshot, 
+  query, 
+  orderBy, 
+  doc, 
+  updateDoc, 
+  addDoc, 
+  deleteDoc, 
+  serverTimestamp 
+} from "firebase/firestore";
+
+interface Sport {
+  id: string;
+  name: string;
+  waitingTime: number;
+  location: string;
+  description?: string;
+  updatedAt: any;
+}
 
 export default function AdminPage() {
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [adminCodeInput, setAdminCodeInput] = useState('');
-  const [error, setError] = useState('');
+  const [sports, setSports] = useState<Sport[]>([]);
+  const [passcode, setPasscode] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // 運営メンバーが入力する正しい管理者コード（ここを自由に変更してください）
-  const CORRECT_ADMIN_CODE = 'tsuku2026';
+  // 種目追加フォーム用のステート
+  const [newSportName, setNewSportName] = useState("");
+  const [newSportLocation, setNewSportLocation] = useState("");
+  const [newSportDescription, setNewSportDescription] = useState("");
+  const [newSportWaitingTime, setNewSportWaitingTime] = useState(0);
 
-  // お知らせ用のステート
-  const [newsTitle, setNewsTitle] = useState('');
-  const [newsContent, setNewsContent] = useState('');
+  // 管理者専用パスコード（4桁のランダム数字）
+  const ADMIN_PASSCODE = "5193";
 
-  // アトラクション混雑状況用のステート
-  const [attractions, setAttractions] = useState<any[]>([]);
+  useEffect(() => {
+    if (!isAuthenticated) return;
 
-  // 1. 簡易ログイン処理
+    const q = query(collection(db, "sports"), orderBy("name", "asc"));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const sportsData: Sport[] = [];
+      snapshot.forEach((doc) => {
+        sportsData.push({ id: doc.id, ...doc.data() } as Sport);
+      });
+      setSports(sportsData);
+    });
+
+    return () => unsub();
+  }, [isAuthenticated]);
+
+  // ログイン処理
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (adminCodeInput === CORRECT_ADMIN_CODE) {
-      setIsAdmin(true);
-      setError('');
-      // ログイン成功時にアトラクション情報を取得
-      fetchAttractions();
+    if (passcode === ADMIN_PASSCODE) {
+      setIsAuthenticated(true);
     } else {
-      setError('管理者コードが正しくありません。');
+      alert("❌ パスコードが違います。");
     }
   };
 
-  // 2. アトラクション一覧の取得
-  const fetchAttractions = async () => {
-    try {
-      const querySnapshot = await getDocs(collection(db, 'attractions'));
-      const list = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setAttractions(list);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // 3. お知らせの投稿
-  const handlePostNews = async (e: React.FormEvent) => {
+  // 新規種目の追加
+  const handleAddSport = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newsTitle || !newsContent) return;
+    if (!newSportName.trim() || !newSportLocation.trim()) {
+      alert("種目名と場所を入力してください。");
+      return;
+    }
 
     try {
-      await addDoc(collection(db, 'news'), {
-        title: newsTitle,
-        content: newsContent,
-        createdAt: serverTimestamp()
+      await addDoc(collection(db, "sports"), {
+        name: newSportName,
+        location: newSportLocation,
+        waitingTime: Number(newSportWaitingTime),
+        description: newSportDescription,
+        updatedAt: serverTimestamp(),
       });
-      alert('お知らせを投稿しました！');
-      setNewsTitle('');
-      setNewsContent('');
-    } catch (err) {
-      alert('投稿に失敗しました: ' + err);
+      // フォームの初期化
+      setNewSportName("");
+      setNewSportLocation("");
+      setNewSportDescription("");
+      setNewSportWaitingTime(0);
+      alert("🎉 新しい種目を追加しました！");
+    } catch (error) {
+      console.error(error);
+      alert("❌ 追加に失敗しました。");
     }
   };
 
-  // 4. 混雑状況（待ち時間）の更新
-  const handleUpdateWaitTime = async (id: string, newTime: number) => {
+  // 待ち時間の更新
+  const handleUpdateWaitingTime = async (id: string, time: number) => {
     try {
-      const docRef = doc(db, 'attractions', id);
-      await updateDoc(docRef, { waitTime: newTime });
-      alert('待ち時間を更新しました！');
-      fetchAttractions();
-    } catch (err) {
-      alert('更新に失敗しました: ' + err);
+      const sportDoc = doc(db, "sports", id);
+      await updateDoc(sportDoc, {
+        waitingTime: time,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error(error);
+      alert("更新に失敗しました。");
     }
   };
 
-  // ログイン前の画面
-  if (!isAdmin) {
+  // 種目の削除
+  const handleDeleteSport = async (id: string, name: string) => {
+    if (!confirm(`本当に「${name}」を削除しますか？`)) return;
+    try {
+      await deleteDoc(doc(db, "sports", id));
+      alert("削除しました。");
+    } catch (error) {
+      console.error(error);
+      alert("削除に失敗しました。");
+    }
+  };
+
+  // 認証前画面
+  if (!isAuthenticated) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-        <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full">
-          <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">運営管理者ログイン</h1>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">管理者コード</label>
-              <input
-                type="password"
-                value={adminCodeInput}
-                onChange={(e) => setAdminCodeInput(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-                placeholder="コードを入力してください"
-              />
-            </div>
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-            <button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-200"
-            >
-              ログイン
-            </button>
-          </form>
-        </div>
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", backgroundColor: "#f7f9fc", fontFamily: "sans-serif" }}>
+        <form onSubmit={handleLogin} style={{ backgroundColor: "white", padding: "30px", borderRadius: "16px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)", textAlign: "center", width: "300px" }}>
+          <h1 style={{ fontSize: "18px", color: "#5a2575", marginBottom: "16px", fontWeight: "bold" }}>管理者ログイン</h1>
+          <input
+            type="password"
+            placeholder="管理者用パスコード（4桁）"
+            value={passcode}
+            onChange={(e) => setPasscode(e.target.value)}
+            style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e0", fontSize: "14px", textAlign: "center", marginBottom: "16px", outline: "none", boxSizing: "border-box" }}
+          />
+          <button type="submit" style={{ width: "100%", padding: "10px", backgroundColor: "#5a2575", color: "white", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>
+            ログイン
+          </button>
+        </form>
       </div>
     );
   }
 
-  // ログイン後の管理画面
+  // 管理者操作画面
   return (
-    <div className="min-h-screen bg-gray-50 p-6 text-black">
-      <div className="max-w-4xl mx-auto space-y-8">
-        <div className="flex justify-between items-center border-b pb-4">
-          <h1 className="text-3xl font-bold">スポーツデー 運営管理画面</h1>
-          <button
-            onClick={() => setIsAdmin(false)}
-            className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
-          >
-            ログアウト
-          </button>
-        </div>
+    <div style={{ backgroundColor: "#f7f9fc", minHeight: "100vh", fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif", paddingBottom: "60px" }}>
+      <header style={{ backgroundColor: "#2d3748", color: "white", padding: "16px", textAlign: "center" }}>
+        <h1 style={{ fontSize: "18px", margin: 0, fontWeight: "bold" }}>⚙️ 運営管理者用コントロールパネル</h1>
+      </header>
 
-        {/* お知らせ投稿フォーム */}
-        <section className="bg-white p-6 rounded-lg shadow-sm">
-          <h2 className="text-xl font-semibold mb-4">① お知らせの新規投稿</h2>
-          <form onSubmit={handlePostNews} className="space-y-4">
+      <main style={{ maxWidth: "550px", margin: "0 auto", padding: "20px 16px" }}>
+        
+        {/* ➕ 新規種目追加セクション */}
+        <section style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px", marginBottom: "24px", boxShadow: "0 4px 12px rgba(0,0,0,0.03)", border: "1px solid #cbd5e0" }}>
+          <h2 style={{ fontSize: "15px", color: "#2d3748", fontWeight: "700", margin: "0 0 14px 0", borderBottom: "2px solid #5a2575", paddingBottom: "6px" }}>
+            ➕ 新しいアトラクション（種目）を追加
+          </h2>
+          <form onSubmit={handleAddSport} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: "11px", fontWeight: "bold", color: "#4a5568", display: "block", marginBottom: "4px" }}>種目名</label>
+                <input
+                  type="text"
+                  placeholder="例：バブルサッカー"
+                  value={newSportName}
+                  onChange={(e) => setNewSportName(e.target.value)}
+                  style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e0", fontSize: "12px", boxSizing: "border-box" }}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: "11px", fontWeight: "bold", color: "#4a5568", display: "block", marginBottom: "4px" }}>場所（コートなど）</label>
+                <input
+                  type="text"
+                  placeholder="例：第3サッカー場"
+                  value={newSportLocation}
+                  onChange={(e) => setNewSportLocation(e.target.value)}
+                  style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e0", fontSize: "12px", boxSizing: "border-box" }}
+                />
+              </div>
+            </div>
+
             <div>
-              <label className="block text-sm font-medium text-gray-700">タイトル</label>
+              <label style={{ fontSize: "11px", fontWeight: "bold", color: "#4a5568", display: "block", marginBottom: "4px" }}>初期の待ち時間（分）</label>
               <input
-                type="text"
-                value={newsTitle}
-                onChange={(e) => setNewsTitle(e.target.value)}
-                className="mt-1 w-full border rounded p-2"
-                placeholder="【重要】雨天によるスケジュール変更"
+                type="number"
+                value={newSportWaitingTime}
+                onChange={(e) => setNewSportWaitingTime(Number(e.target.value))}
+                style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e0", fontSize: "12px", boxSizing: "border-box" }}
               />
             </div>
+
             <div>
-              <label className="block text-sm font-medium text-gray-700">内容</label>
+              <label style={{ fontSize: "11px", fontWeight: "bold", color: "#4a5568", display: "block", marginBottom: "4px" }}>種目の紹介説明（任意）</label>
               <textarea
-                value={newsContent}
-                onChange={(e) => setNewsContent(e.target.value)}
-                className="mt-1 w-full border rounded p-2 h-24"
-                placeholder="変更内容の詳細を入力してください。"
+                placeholder="ルールや持ち物などの詳細説明を入力"
+                value={newSportDescription}
+                onChange={(e) => setNewSportDescription(e.target.value)}
+                rows={3}
+                style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e0", fontSize: "12px", resize: "none", boxSizing: "border-box" }}
               />
             </div>
-            <button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
-              お知らせを配信
+
+            <button type="submit" style={{ padding: "10px", backgroundColor: "#5a2575", color: "white", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", fontSize: "13px" }}>
+              アトラクションを追加する
             </button>
           </form>
         </section>
 
-        {/* アトラクション待ち時間更新フォーム */}
-        <section className="bg-white p-6 rounded-lg shadow-sm">
-          <h2 className="text-xl font-semibold mb-4">② アトラクション混雑状況の更新</h2>
-          <div className="space-y-4">
-            {attractions.length === 0 ? (
-              <p className="text-gray-500 text-sm">アトラクションが登録されていません。（Firestoreの 'attractions' コレクションを確認してください）</p>
-            ) : (
-              attractions.map((attraction) => (
-                <div key={attraction.id} className="flex justify-between items-center border-b pb-2">
+        {/* ⏱ 既存種目の待ち時間管理・削除セクション */}
+        <section style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px", boxShadow: "0 4px 12px rgba(0,0,0,0.03)" }}>
+          <h2 style={{ fontSize: "15px", color: "#2d3748", fontWeight: "700", margin: "0 0 16px 0", borderBottom: "2px solid #edf2f7", paddingBottom: "6px" }}>
+            ⏱ リアルタイム待ち時間管理
+          </h2>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {sports.map((sport) => (
+              <div key={sport.id} style={{ borderBottom: "1px solid #edf2f7", paddingBottom: "16px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
                   <div>
-                    <p className="font-medium text-lg">{attraction.name}</p>
-                    <p className="text-sm text-gray-500">現在の待ち時間: {attraction.waitTime}分</p>
+                    <h3 style={{ fontSize: "14px", fontWeight: "bold", margin: 0, color: "#1a202c" }}>{sport.name}</h3>
+                    <p style={{ fontSize: "11px", color: "#718096", margin: "2px 0 0 0" }}>📍 {sport.location}</p>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="number"
-                      defaultValue={attraction.waitTime}
-                      id={`time-${attraction.id}`}
-                      className="border rounded w-16 p-1 text-center"
-                    />
-                    <span className="text-sm">分</span>
-                    <button
-                      onClick={() => {
-                        const input = document.getElementById(`time-${attraction.id}`) as HTMLInputElement;
-                        handleUpdateWaitTime(attraction.id, Number(input.value));
-                      }}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
-                    >
-                      更新
-                    </button>
-                  </div>
+                  <button 
+                    onClick={() => handleDeleteSport(sport.id, sport.name)}
+                    style={{ padding: "4px 8px", backgroundColor: "#fff5f5", color: "#e53e3e", border: "1px solid #fed7d7", borderRadius: "4px", fontSize: "10px", cursor: "pointer", fontWeight: "bold" }}
+                  >
+                    削除
+                  </button>
                 </div>
-              ))
-            )}
+
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <button 
+                    onClick={() => handleUpdateWaitingTime(sport.id, Math.max(0, sport.waitingTime - 5))}
+                    style={{ padding: "8px 12px", backgroundColor: "#edf2f7", border: "none", borderRadius: "6px", fontSize: "13px", fontWeight: "bold", cursor: "pointer" }}
+                  >
+                    -5分
+                  </button>
+                  <div style={{ flex: 1, textAlign: "center", backgroundColor: "#f7fafc", padding: "6px", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                    <span style={{ fontSize: "18px", fontWeight: "bold", color: "#2d3748" }}>{sport.waitingTime}</span>
+                    <span style={{ fontSize: "11px", color: "#718096", marginLeft: "2px" }}>分待ち</span>
+                  </div>
+                  <button 
+                    onClick={() => handleUpdateWaitingTime(sport.id, sport.waitingTime + 5)}
+                    style={{ padding: "8px 12px", backgroundColor: "#edf2f7", border: "none", borderRadius: "6px", fontSize: "13px", fontWeight: "bold", cursor: "pointer" }}
+                  >
+                    +5分
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
-      </div>
+      </main>
     </div>
   );
 }

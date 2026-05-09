@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation"; // 👈 画面遷移用
+import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
@@ -11,7 +11,8 @@ export default function NewReviewPage() {
   const [userPasscode, setUserPasscode] = useState("");
   const [reviewStatus, setReviewStatus] = useState("");
 
-  const USER_PASSCODE = "tsuku2026";
+  // 閲覧者の口コミ投稿用パスコード（4桁のランダム数字）
+  const USER_PASSCODE = "8264";
 
   const handlePostReview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +36,6 @@ export default function NewReviewPage() {
       setUserPasscode("");
       setReviewStatus("🎉 つぶやきを投稿しました！");
 
-      // 1.5秒後にホーム（一覧）へ自動で戻る
       setTimeout(() => {
         router.push("/");
         router.refresh();
@@ -48,7 +48,6 @@ export default function NewReviewPage() {
 
   return (
     <div style={{ backgroundColor: "#f7f9fc", minHeight: "100vh", fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif" }}>
-      {/* シンプルなヘッダー */}
       <header style={{ backgroundColor: "#5a2575", color: "white", padding: "16px", display: "flex", alignItems: "center" }}>
         <button 
           onClick={() => router.back()} 
@@ -65,7 +64,7 @@ export default function NewReviewPage() {
             💬 つぶやきを投稿する
           </h2>
           <p style={{ fontSize: "11px", color: "#718096", margin: "0 0 16px 0", lineHeight: "1.4" }}>
-            本文中に<strong>「種目名（例：バブルサッカー）」</strong>を入れると、各アトラクションの詳細ページにも自動で表示されます！
+            本文中に<strong>「種目名」</strong>を入れると、各アトラクションの詳細ページにも自動で表示されます！
           </p>
 
           <form onSubmit={handlePostReview} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
@@ -92,10 +91,10 @@ export default function NewReviewPage() {
             </div>
 
             <div>
-              <label style={{ fontSize: "12px", fontWeight: "bold", color: "#4a5568", display: "block", marginBottom: "6px" }}>掲示板用パスコード</label>
+              <label style={{ fontSize: "12px", fontWeight: "bold", color: "#4a5568", display: "block", marginBottom: "6px" }}>投稿用パスコード（数字4桁）</label>
               <input
                 type="password"
-                placeholder="パスコードを入力（tsuku2026）"
+                placeholder="4桁の数字を入力"
                 value={userPasscode}
                 onChange={(e) => setUserPasscode(e.target.value)}
                 style={{
