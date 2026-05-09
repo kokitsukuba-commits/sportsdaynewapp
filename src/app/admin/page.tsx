@@ -28,7 +28,11 @@ export default function AdminPage() {
   const [passcode, setPasscode] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // 種目追加フォーム用のステート
+  // 📢 お知らせ投稿フォーム用のステート
+  const [announcementTitle, setAnnouncementTitle] = useState("");
+  const [announcementContent, setAnnouncementContent] = useState("");
+
+  // ➕ 種目追加フォーム用のステート
   const [newSportName, setNewSportName] = useState("");
   const [newSportLocation, setNewSportLocation] = useState("");
   const [newSportDescription, setNewSportDescription] = useState("");
@@ -62,7 +66,30 @@ export default function AdminPage() {
     }
   };
 
-  // 新規種目の追加
+  // 📢 お知らせの追加
+  const handleAddAnnouncement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!announcementTitle.trim() || !announcementContent.trim()) {
+      alert("タイトルと内容を入力してください。");
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, "announcements"), {
+        title: announcementTitle,
+        content: announcementContent,
+        createdAt: serverTimestamp(),
+      });
+      setAnnouncementTitle("");
+      setAnnouncementContent("");
+      alert("📢 お知らせを投稿しました！");
+    } catch (error) {
+      console.error(error);
+      alert("❌ お知らせの投稿に失敗しました。");
+    }
+  };
+
+  // ➕ 新規種目の追加
   const handleAddSport = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSportName.trim() || !newSportLocation.trim()) {
@@ -78,7 +105,6 @@ export default function AdminPage() {
         description: newSportDescription,
         updatedAt: serverTimestamp(),
       });
-      // フォームの初期化
       setNewSportName("");
       setNewSportLocation("");
       setNewSportDescription("");
@@ -90,7 +116,7 @@ export default function AdminPage() {
     }
   };
 
-  // 待ち時間の更新
+  // ⏱ 待ち時間の更新
   const handleUpdateWaitingTime = async (id: string, time: number) => {
     try {
       const sportDoc = doc(db, "sports", id);
@@ -104,7 +130,7 @@ export default function AdminPage() {
     }
   };
 
-  // 種目の削除
+  // 🗑 種目の削除
   const handleDeleteSport = async (id: string, name: string) => {
     if (!confirm(`本当に「${name}」を削除しますか？`)) return;
     try {
@@ -146,6 +172,38 @@ export default function AdminPage() {
 
       <main style={{ maxWidth: "550px", margin: "0 auto", padding: "20px 16px" }}>
         
+        {/* 📢 お知らせ新規投稿セクション */}
+        <section style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px", marginBottom: "24px", boxShadow: "0 4px 12px rgba(0,0,0,0.03)", border: "1px solid #cbd5e0" }}>
+          <h2 style={{ fontSize: "15px", color: "#2d3748", fontWeight: "700", margin: "0 0 14px 0", borderBottom: "2px solid #5a2575", paddingBottom: "6px" }}>
+            📢 運営からのお知らせを投稿
+          </h2>
+          <form onSubmit={handleAddAnnouncement} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div>
+              <label style={{ fontSize: "11px", fontWeight: "bold", color: "#4a5568", display: "block", marginBottom: "4px" }}>タイトル</label>
+              <input
+                type="text"
+                placeholder="例：【重要】雨天プログラムへの移行について"
+                value={announcementTitle}
+                onChange={(e) => setAnnouncementTitle(e.target.value)}
+                style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e0", fontSize: "12px", boxSizing: "border-box" }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: "11px", fontWeight: "bold", color: "#4a5568", display: "block", marginBottom: "4px" }}>お知らせ内容</label>
+              <textarea
+                placeholder="雨天のため、午後のバブルサッカーは体育館での開催に変更となりました。"
+                value={announcementContent}
+                onChange={(e) => setAnnouncementContent(e.target.value)}
+                rows={3}
+                style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e0", fontSize: "12px", resize: "none", boxSizing: "border-box" }}
+              />
+            </div>
+            <button type="submit" style={{ padding: "10px", backgroundColor: "#5a2575", color: "white", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", fontSize: "13px" }}>
+              お知らせを配信する
+            </button>
+          </form>
+        </section>
+
         {/* ➕ 新規種目追加セクション */}
         <section style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px", marginBottom: "24px", boxShadow: "0 4px 12px rgba(0,0,0,0.03)", border: "1px solid #cbd5e0" }}>
           <h2 style={{ fontSize: "15px", color: "#2d3748", fontWeight: "700", margin: "0 0 14px 0", borderBottom: "2px solid #5a2575", paddingBottom: "6px" }}>
