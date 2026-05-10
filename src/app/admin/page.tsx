@@ -30,10 +30,16 @@ interface Announcement {
   createdAt: any;
 }
 
+interface Reply {
+  text: string;
+  createdAt: string;
+}
+
 interface Review {
   id: string;
   text: string;
   createdAt: any;
+  replies?: Reply[];
 }
 
 export default function AdminPage() {
@@ -43,23 +49,19 @@ export default function AdminPage() {
   const [passcode, setPasscode] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // 📢 お知らせ投稿フォーム用のステート
   const [announcementTitle, setAnnouncementTitle] = useState("");
   const [announcementContent, setAnnouncementContent] = useState("");
 
-  // ➕ 種目追加フォーム用のステート
   const [newSportName, setNewSportName] = useState("");
   const [newSportLocation, setNewSportLocation] = useState("");
   const [newSportDescription, setNewSportDescription] = useState("");
   const [newSportWaitingTime, setNewSportWaitingTime] = useState(0);
 
-  // 管理者専用パスコード（4桁のランダム数字）
   const ADMIN_PASSCODE = "5193";
 
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    // 1. 種目のリアルタイム取得
     const qSports = query(collection(db, "sports"), orderBy("name", "asc"));
     const unsubSports = onSnapshot(qSports, (snapshot) => {
       const sportsData: Sport[] = [];
@@ -69,7 +71,6 @@ export default function AdminPage() {
       setSports(sportsData);
     });
 
-    // 2. お知らせのリアルタイム取得（新しい順）
     const qAnnouncements = query(collection(db, "announcements"), orderBy("createdAt", "desc"));
     const unsubAnnouncements = onSnapshot(qAnnouncements, (snapshot) => {
       const announcementsData: Announcement[] = [];
@@ -79,7 +80,6 @@ export default function AdminPage() {
       setAnnouncements(announcementsData);
     });
 
-    // 3. 一般口コミ（つぶやき）のリアルタイム取得（新しい順）
     const qReviews = query(collection(db, "reviews"), orderBy("createdAt", "desc"));
     const unsubReviews = onSnapshot(qReviews, (snapshot) => {
       const reviewsData: Review[] = [];
@@ -96,7 +96,6 @@ export default function AdminPage() {
     };
   }, [isAuthenticated]);
 
-  // ログイン処理
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (passcode === ADMIN_PASSCODE) {
@@ -106,7 +105,6 @@ export default function AdminPage() {
     }
   };
 
-  // 📢 お知らせの追加
   const handleAddAnnouncement = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!announcementTitle.trim() || !announcementContent.trim()) {
@@ -129,7 +127,6 @@ export default function AdminPage() {
     }
   };
 
-  // 🗑 お知らせの削除
   const handleDeleteAnnouncement = async (id: string, title: string) => {
     if (!confirm(`本当に「${title}」のお知らせを削除しますか？`)) return;
     try {
@@ -141,11 +138,10 @@ export default function AdminPage() {
     }
   };
 
-  // 🗑 一般つぶやき（口コミ）の削除
+  // 🗑 つぶやき全体の削除
   const handleDeleteReview = async (id: string, text: string) => {
-    // 確認ダイアログに表示する文字列を短く制限
     const previewText = text.length > 20 ? text.substring(0, 20) + "..." : text;
-    if (!confirm(`本当にこのつぶやきを削除しますか？\n「${previewText}」`)) return;
+    if (!confirm(`本当にこのつぶやきを削除しますか？\n「${previewText}」\n※ついてる返信もすべて消去されます。`)) return;
     
     try {
       await deleteDoc(doc(db, "reviews", id));
@@ -156,7 +152,29 @@ export default function AdminPage() {
     }
   };
 
-  // ➕ 新規種目の追加
+  // 🗑 特定の返信のみ個別削除する処理（新規追加！）
+  const handleDeleteReply = async (reviewId: string, replyIndex: number) => {
+    const parentReview = reviews.find(r => r.id === reviewId);
+    if (!parentReview || !parentReview.replies) return;
+
+    const replyToDelete = parentReview.replies[replyIndex];
+    if (!confirm(`本当にこの返信を削除しますか？\n「${replyToDelete.text}」`)) return;
+
+    try {
+      // 削除対象のインデックスを外した新しい返信配列を作成
+      const updatedReplies = parentReview.replies.filter((_, idx) => idx !== replyIndex);
+      
+      const reviewRef = doc(db, "reviews", reviewId);
+      await updateDoc(reviewRef, {
+        replies: updatedReplies
+      });
+      alert("返信を削除しました。");
+    } catch (error) {
+      console.error(error);
+      alert("❌ 返信の削除に失敗しました。");
+    }
+  };
+
   const handleAddSport = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSportName.trim() || !newSportLocation.trim()) {
@@ -183,7 +201,6 @@ export default function AdminPage() {
     }
   };
 
-  // ⏱ 待ち時間の更新
   const handleUpdateWaitingTime = async (id: string, time: number) => {
     try {
       const sportDoc = doc(db, "sports", id);
@@ -197,7 +214,6 @@ export default function AdminPage() {
     }
   };
 
-  // 🗑 種目の削除
   const handleDeleteSport = async (id: string, name: string) => {
     if (!confirm(`本当に「${name}」を削除しますか？`)) return;
     try {
@@ -209,7 +225,6 @@ export default function AdminPage() {
     }
   };
 
-  // 認証前画面
   if (!isAuthenticated) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", backgroundColor: "#f7f9fc", fontFamily: "sans-serif" }}>
@@ -230,7 +245,6 @@ export default function AdminPage() {
     );
   }
 
-  // 管理者操作画面
   return (
     <div style={{ backgroundColor: "#f7f9fc", minHeight: "100vh", fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif", paddingBottom: "60px" }}>
       <header style={{ backgroundColor: "#2d3748", color: "white", padding: "16px", textAlign: "center" }}>
@@ -245,7 +259,6 @@ export default function AdminPage() {
             📢 運営からのお知らせ管理
           </h2>
           
-          {/* 新規お知らせ投稿フォーム */}
           <form onSubmit={handleAddAnnouncement} style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "20px" }}>
             <div>
               <label style={{ fontSize: "11px", fontWeight: "bold", color: "#4a5568", display: "block", marginBottom: "4px" }}>タイトル</label>
@@ -272,7 +285,6 @@ export default function AdminPage() {
             </button>
           </form>
 
-          {/* 投稿済みお知らせ一覧と削除 */}
           <div style={{ borderTop: "1px dashed #cbd5e0", paddingTop: "14px" }}>
             <h3 style={{ fontSize: "12px", fontWeight: "bold", color: "#4a5568", marginBottom: "8px" }}>配信中のお知らせ一覧</h3>
             {announcements.length === 0 ? (
@@ -297,30 +309,58 @@ export default function AdminPage() {
           </div>
         </section>
 
-        {/* 💬 一般つぶやき（口コミ）管理セクション（新規追加） */}
+        {/* 💬 一般つぶやき（口コミ・返信）管理セクション */}
         <section style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px", marginBottom: "24px", boxShadow: "0 4px 12px rgba(0,0,0,0.03)", border: "1px solid #cbd5e0" }}>
           <h2 style={{ fontSize: "15px", color: "#2d3748", fontWeight: "700", margin: "0 0 14px 0", borderBottom: "2px solid #e2e8f0", paddingBottom: "6px" }}>
-            💬 参加者のつぶやき管理
+            💬 参加者のつぶやき ＆ 返信管理
           </h2>
           <p style={{ fontSize: "11px", color: "#718096", margin: "0 0 12px 0", lineHeight: "1.4" }}>
-            一般閲覧者が投稿した口コミ（つぶやき）が新しい順に表示されます。不適切な内容やいたずら投稿はここから削除できます。
+            不適切な親つぶやき、または特定の返信メッセージを個別に削除することができます。
           </p>
 
           {reviews.length === 0 ? (
             <p style={{ fontSize: "11px", color: "#718096", margin: 0 }}>投稿されたつぶやきはありません。</p>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "250px", overflowY: "auto" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", maxHeight: "350px", overflowY: "auto" }}>
               {reviews.map((rev) => (
-                <div key={rev.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", backgroundColor: "#f7fafc", padding: "10px 12px", borderRadius: "6px", border: "1px solid #edf2f7" }}>
-                  <div style={{ flex: 1, marginRight: "12px" }}>
-                    <p style={{ fontSize: "12px", color: "#2d3748", margin: 0, whiteSpace: "pre-wrap", lineHeight: "1.4" }}>{rev.text}</p>
+                <div key={rev.id} style={{ backgroundColor: "#f7fafc", padding: "12px", borderRadius: "8px", border: "1px solid #edf2f7" }}>
+                  
+                  {/* 親つぶやきエリア */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+                    <div style={{ flex: 1, marginRight: "12px" }}>
+                      <span style={{ fontSize: "10px", backgroundColor: "#e2e8f0", padding: "2px 6px", borderRadius: "4px", fontWeight: "bold", display: "inline-block", marginBottom: "4px", color: "#4a5568" }}>
+                        親つぶやき
+                      </span>
+                      <p style={{ fontSize: "13px", color: "#2d3748", margin: 0, whiteSpace: "pre-wrap", lineHeight: "1.4", fontWeight: "600" }}>{rev.text}</p>
+                    </div>
+                    <button 
+                      onClick={() => handleDeleteReview(rev.id, rev.text)}
+                      style={{ padding: "4px 8px", backgroundColor: "#fff5f5", color: "#e53e3e", border: "1px solid #fed7d7", borderRadius: "4px", fontSize: "10px", cursor: "pointer", fontWeight: "bold", whiteSpace: "nowrap" }}
+                    >
+                      削除
+                    </button>
                   </div>
-                  <button 
-                    onClick={() => handleDeleteReview(rev.id, rev.text)}
-                    style={{ padding: "4px 8px", backgroundColor: "#fff5f5", color: "#e53e3e", border: "1px solid #fed7d7", borderRadius: "4px", fontSize: "10px", cursor: "pointer", fontWeight: "bold", whiteSpace: "nowrap" }}
-                  >
-                    削除
-                  </button>
+
+                  {/* 返信ツリーエリア（返信ごとの個別削除！） */}
+                  {rev.replies && rev.replies.length > 0 && (
+                    <div style={{ backgroundColor: "white", borderRadius: "6px", padding: "8px", marginTop: "8px", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: "6px" }}>
+                      {rev.replies.map((reply, index) => (
+                        <div key={index} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11px", borderBottom: index !== rev.replies!.length - 1 ? "1px solid #edf2f7" : "none", paddingBottom: "4px", paddingTop: "4px" }}>
+                          <div style={{ flex: 1, marginRight: "10px" }}>
+                            <span style={{ color: "#718096", fontSize: "9px", display: "block" }}>💬 返信 ({reply.createdAt})</span>
+                            <p style={{ margin: "2px 0 0 0", color: "#4a5568" }}>{reply.text}</p>
+                          </div>
+                          <button 
+                            onClick={() => handleDeleteReply(rev.id, index)}
+                            style={{ padding: "2px 6px", backgroundColor: "#fff5f5", color: "#e53e3e", border: "1px solid #fed7d7", borderRadius: "4px", fontSize: "9px", cursor: "pointer", fontWeight: "bold", whiteSpace: "nowrap" }}
+                          >
+                            返信消去
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                 </div>
               ))}
             </div>

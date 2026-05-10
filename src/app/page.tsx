@@ -29,30 +29,43 @@ interface Announcement {
   createdAt: any;
 }
 
-// 💬 返信データの型定義
 interface Reply {
   text: string;
   createdAt: string; 
 }
 
-// 💬 口コミデータに replies（返信の配列）を追加
+// 💬 リアクション用の型定義（各絵文字のカウント数）
+interface Reactions {
+  like?: number;    // 👍
+  love?: number;    // ❤️
+  laugh?: number;   // 😆
+  sad?: number;     // 😭
+  fire?: number;    // 🔥
+}
+
 interface Review {
   id: string;
   text: string;
   createdAt: any;
-  replies?: Reply[]; // 👈 ここを追加
+  replies?: Reply[];
+  reactions?: Reactions; // 👈 リアクションプロパティを追加
 }
+
+// 利用可能なリアクション一覧
+const REACTION_EMOJIS = [
+  { key: "like", emoji: "👍" },
+  { key: "love", emoji: "❤️" },
+  { key: "laugh", emoji: "😆" },
+  { key: "sad", emoji: "😭" },
+  { key: "fire", emoji: "🔥" }
+] as const;
 
 export default function UserPage() {
   const [sports, setSports] = useState<Sport[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // 👈 各つぶやきへの返信入力テキストを保持するState（キーはreviewId）
   const [replyInputs, setReplyInputs] = useState<{ [key: string]: string }>({});
-
-  // タップして開いている種目のIDを管理するステート
   const [expandedSportId, setExpandedSportId] = useState<string | null>(null);
 
   const formatTime = (timestamp: any) => {
@@ -80,7 +93,6 @@ export default function UserPage() {
       setAnnouncements(announcementsData);
     });
 
-    // 口コミデータのリアルタイム監視
     const qReviews = query(collection(db, "reviews"), orderBy("createdAt", "desc"));
     const unsubReviews = onSnapshot(qReviews, (snapshot) => {
       const reviewsData: Review[] = [];
@@ -98,7 +110,7 @@ export default function UserPage() {
     };
   }, []);
 
-  // 👈 返信を送信する処理
+  // 💬 返信の送信処理
   const handlePostReply = async (reviewId: string) => {
     const replyText = replyInputs[reviewId];
     if (!replyText || !replyText.trim()) return;
@@ -110,12 +122,10 @@ export default function UserPage() {
         createdAt: new Date().toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })
       };
 
-      // Firestoreの replies 配列に新しい返信を追加更新（既存データを消さない安心設計です）
       await updateDoc(reviewRef, {
         replies: arrayUnion(newReply)
       });
 
-      // 入力フィールドをリセット
       setReplyInputs(prev => ({ ...prev, [reviewId]: "" }));
     } catch (error) {
       console.error(error);
@@ -123,7 +133,27 @@ export default function UserPage() {
     }
   };
 
-  // アコーディオンの開閉を切り替える関数
+  // 👍 リアクションの追加処理
+  const handleAddReaction = async (reviewId: string, reactionKey: keyof Reactions) => {
+    try {
+      const reviewRef = doc(db, "reviews", reviewId);
+      
+      // 対象のつぶやきを取得
+      const review = reviews.find(r => r.id === reviewId);
+      if (!review) return;
+
+      const currentReactions = review.reactions || {};
+      const currentCount = currentReactions[reactionKey] || 0;
+
+      // リアクションのカウントを+1する
+      await updateDoc(reviewRef, {
+        [`reactions.${reactionKey}`]: currentCount + 1
+      });
+    } catch (error) {
+      console.error("リアクションの送信に失敗しました:", error);
+    }
+  };
+
   const toggleExpand = (id: string) => {
     setExpandedSportId(expandedSportId === id ? null : id);
   };
@@ -229,7 +259,6 @@ export default function UserPage() {
                 bgLight = "#fffaf0";
               }
 
-              // 口コミ自動フィルタリング
               const filteredReviews = reviews.filter(rev => 
                 rev.text.toLowerCase().includes(sport.name.toLowerCase())
               );
@@ -309,38 +338,69 @@ export default function UserPage() {
                         ) : (
                           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                             {filteredReviews.map((rev) => (
-                              <div key={rev.id} style={{ backgroundColor: "#fbf7ff", padding: "10px 12px", borderRadius: "8px", border: "1px solid #f3ebfa" }}>
-                                <p style={{ fontSize: "12px", color: "#2d3748", margin: "0 0 4px 0", lineHeight: "1.4" }}>
+                              <div key={rev.id} style={{ backgroundColor: "#fbf7ff", padding: "12px", borderRadius: "8px", border: "1px solid #f3ebfa" }}>
+                                <p style={{ fontSize: "13px", color: "#2d3748", margin: "0 0 4px 0", lineHeight: "1.4", fontWeight: "500" }}>
                                   {rev.text}
                                 </p>
-                                <span style={{ fontSize: "9px", color: "#a0aec0", display: "block", marginBottom: "6px" }}>
+                                <span style={{ fontSize: "9px", color: "#a0aec0", display: "block", marginBottom: "8px" }}>
                                   {formatTime(rev.createdAt)}
                                 </span>
 
-                                {/* 👈 返信一覧表示（種目詳細アコーディオン内） */}
+                                {/* 👍 LINE風リアクションエリア（アコーディオン内） */}
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "10px" }}>
+                                  {REACTION_EMOJIS.map((item) => {
+                                    const count = rev.reactions?.[item.key] || 0;
+                                    return (
+                                      <button
+                                        key={item.key}
+                                        onClick={() => handleAddReaction(rev.id, item.key)}
+                                        style={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: "4px",
+                                          backgroundColor: "white",
+                                          border: "1px solid #e2e8f0",
+                                          borderRadius: "20px",
+                                          padding: "3px 8px",
+                                          fontSize: "11px",
+                                          cursor: "pointer",
+                                          boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+                                          transition: "transform 0.1s"
+                                        }}
+                                        onMouseDown={(e) => e.currentTarget.style.transform = "scale(0.92)"}
+                                        onMouseUp={(e) => e.currentTarget.style.transform = "scale(1)"}
+                                      >
+                                        <span>{item.emoji}</span>
+                                        <span style={{ fontWeight: "bold", color: count > 0 ? "#5a2575" : "#a0aec0" }}>{count}</span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+
+                                {/* 💬 返信一覧（文字色を白から濃いグレー #2d3748 に変更して見やすく修正！） */}
                                 {rev.replies && rev.replies.length > 0 && (
-                                  <div style={{ backgroundColor: "white", padding: "8px", borderRadius: "6px", display: "flex", flexDirection: "column", gap: "6px", marginTop: "6px", border: "1px solid #edf2f7" }}>
+                                  <div style={{ backgroundColor: "#f3f4f6", padding: "8px 10px", borderRadius: "8px", display: "flex", flexDirection: "column", gap: "6px", marginTop: "6px", border: "1px solid #e5e7eb" }}>
                                     {rev.replies.map((reply, idx) => (
-                                      <div key={idx} style={{ fontSize: "11px", borderBottom: idx !== rev.replies!.length - 1 ? "1px solid #f7fafc" : "none", paddingBottom: "4px" }}>
-                                        <span style={{ color: "#718096", fontSize: "9px", display: "block" }}>💬 返信 ({reply.createdAt})</span>
-                                        <p style={{ margin: "2px 0 0 0", color: "#4a5568" }}>{reply.text}</p>
+                                      <div key={idx} style={{ fontSize: "11px", borderBottom: idx !== rev.replies!.length - 1 ? "1px solid #e5e7eb" : "none", paddingBottom: "4px" }}>
+                                        <span style={{ color: "#718096", fontSize: "9px", display: "block", fontWeight: "bold" }}>💬 返信 ({reply.createdAt})</span>
+                                        <p style={{ margin: "2px 0 0 0", color: "#2d3748", lineHeight: "1.4" }}>{reply.text}</p>
                                       </div>
                                     ))}
                                   </div>
                                 )}
 
-                                {/* 👈 返信書き込みフォーム（種目詳細アコーディオン内） */}
+                                {/* 💬 返信書き込みフォーム */}
                                 <div style={{ display: "flex", gap: "6px", marginTop: "8px" }}>
                                   <input 
                                     type="text"
                                     placeholder="返信を書き込む..."
                                     value={replyInputs[rev.id] || ""}
                                     onChange={(e) => setReplyInputs(prev => ({ ...prev, [rev.id]: e.target.value }))}
-                                    style={{ flex: 1, padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e0", fontSize: "11px", outline: "none", boxSizing: "border-box" }}
+                                    style={{ flex: 1, padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e0", fontSize: "11px", outline: "none", boxSizing: "border-box", color: "#1a202c", backgroundColor: "white" }}
                                   />
                                   <button
                                     onClick={() => handlePostReply(rev.id)}
-                                    style={{ backgroundColor: "#5a2575", color: "white", border: "none", borderRadius: "6px", padding: "5px 10px", fontSize: "10px", fontWeight: "bold", cursor: "pointer" }}
+                                    style={{ backgroundColor: "#5a2575", color: "white", border: "none", borderRadius: "6px", padding: "5px 12px", fontSize: "11px", fontWeight: "bold", cursor: "pointer" }}
                                   >
                                     返信
                                   </button>
@@ -359,7 +419,7 @@ export default function UserPage() {
           </div>
         </section>
 
-        {/* 💬 最新のつぶやき簡易タイムライン */}
+        {/* 💬 みんなの最新のつぶやき */}
         <section style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px", boxShadow: "0 4px 12px rgba(90, 37, 117, 0.05)", border: "1px solid #e2e8f0" }}>
           <h2 style={{ fontSize: "15px", color: "#5a2575", fontWeight: "700", margin: "0 0 12px 0" }}>
             💬 みんなの最新のつぶやき
@@ -369,34 +429,65 @@ export default function UserPage() {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               {reviews.slice(0, 5).map((rev) => ( 
-                <div key={rev.id} style={{ backgroundColor: "#f7fafc", borderRadius: "8px", padding: "10px 12px", border: "1px solid #e2e8f0" }}>
-                  <p style={{ fontSize: "12px", color: "#2d3748", margin: "0 0 4px 0", lineHeight: "1.4" }}>{rev.text}</p>
-                  <span style={{ fontSize: "9px", color: "#a0aec0", display: "block", marginBottom: "6px" }}>{formatTime(rev.createdAt)}</span>
+                <div key={rev.id} style={{ backgroundColor: "#f7fafc", borderRadius: "8px", padding: "12px", border: "1px solid #e2e8f0" }}>
+                  <p style={{ fontSize: "13px", color: "#2d3748", margin: "0 0 4px 0", lineHeight: "1.4", fontWeight: "500" }}>{rev.text}</p>
+                  <span style={{ fontSize: "9px", color: "#a0aec0", display: "block", marginBottom: "8px" }}>{formatTime(rev.createdAt)}</span>
 
-                  {/* 👈 返信一覧表示（みんなのタイムライン内） */}
+                  {/* 👍 LINE風リアクションエリア（タイムライン） */}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "10px" }}>
+                    {REACTION_EMOJIS.map((item) => {
+                      const count = rev.reactions?.[item.key] || 0;
+                      return (
+                        <button
+                          key={item.key}
+                          onClick={() => handleAddReaction(rev.id, item.key)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            backgroundColor: "white",
+                            border: "1px solid #e2e8f0",
+                            borderRadius: "20px",
+                            padding: "3px 8px",
+                            fontSize: "11px",
+                            cursor: "pointer",
+                            boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+                            transition: "transform 0.1s"
+                          }}
+                          onMouseDown={(e) => e.currentTarget.style.transform = "scale(0.92)"}
+                          onMouseUp={(e) => e.currentTarget.style.transform = "scale(1)"}
+                        >
+                          <span>{item.emoji}</span>
+                          <span style={{ fontWeight: "bold", color: count > 0 ? "#5a2575" : "#a0aec0" }}>{count}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* 💬 返信一覧（文字色を白から濃いグレー #2d3748 に変更して見やすく修正！） */}
                   {rev.replies && rev.replies.length > 0 && (
-                    <div style={{ backgroundColor: "white", padding: "8px", borderRadius: "6px", display: "flex", flexDirection: "column", gap: "6px", marginTop: "6px", border: "1px solid #edf2f7" }}>
+                    <div style={{ backgroundColor: "#edf2f7", padding: "8px 10px", borderRadius: "8px", display: "flex", flexDirection: "column", gap: "6px", marginTop: "6px", border: "1px solid #e2e8f0" }}>
                       {rev.replies.map((reply, idx) => (
-                        <div key={idx} style={{ fontSize: "11px", borderBottom: idx !== rev.replies!.length - 1 ? "1px solid #f7fafc" : "none", paddingBottom: "4px" }}>
-                          <span style={{ color: "#718096", fontSize: "9px", display: "block" }}>💬 返信 ({reply.createdAt})</span>
-                          <p style={{ margin: "2px 0 0 0", color: "#4a5568" }}>{reply.text}</p>
+                        <div key={idx} style={{ fontSize: "11px", borderBottom: idx !== rev.replies!.length - 1 ? "1px solid #e2e8f0" : "none", paddingBottom: "4px" }}>
+                          <span style={{ color: "#718096", fontSize: "9px", display: "block", fontWeight: "bold" }}>💬 返信 ({reply.createdAt})</span>
+                          <p style={{ margin: "2px 0 0 0", color: "#2d3748", lineHeight: "1.4" }}>{reply.text}</p>
                         </div>
                       ))}
                     </div>
                   )}
 
-                  {/* 👈 返信書き込みフォーム（みんなのタイムライン内） */}
+                  {/* 💬 返信書き込みフォーム */}
                   <div style={{ display: "flex", gap: "6px", marginTop: "8px" }}>
                     <input 
                       type="text"
                       placeholder="返信を書き込む..."
                       value={replyInputs[rev.id] || ""}
                       onChange={(e) => setReplyInputs(prev => ({ ...prev, [rev.id]: e.target.value }))}
-                      style={{ flex: 1, padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e0", fontSize: "11px", outline: "none", boxSizing: "border-box" }}
+                      style={{ flex: 1, padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e0", fontSize: "11px", outline: "none", boxSizing: "border-box", color: "#1a202c", backgroundColor: "white" }}
                     />
                     <button
                       onClick={() => handlePostReply(rev.id)}
-                      style={{ backgroundColor: "#5a2575", color: "white", border: "none", borderRadius: "6px", padding: "5px 10px", fontSize: "10px", fontWeight: "bold", cursor: "pointer" }}
+                      style={{ backgroundColor: "#5a2575", color: "white", border: "none", borderRadius: "6px", padding: "5px 12px", fontSize: "11px", fontWeight: "bold", cursor: "pointer" }}
                     >
                       返信
                     </button>
