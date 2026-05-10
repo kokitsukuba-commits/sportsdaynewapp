@@ -8,11 +8,7 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 export default function NewReviewPage() {
   const router = useRouter();
   const [newReviewText, setNewReviewText] = useState("");
-  const [userPasscode, setUserPasscode] = useState("");
   const [reviewStatus, setReviewStatus] = useState("");
-
-  // 閲覧者の口コミ投稿用パスコード（4桁のランダム数字）
-  const USER_PASSCODE = "8264";
 
   const handlePostReview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,19 +17,14 @@ export default function NewReviewPage() {
       return;
     }
 
-    if (userPasscode !== USER_PASSCODE) {
-      alert("❌ パスコードが正しくありません。");
-      return;
-    }
-
     setReviewStatus("送信中...");
     try {
       await addDoc(collection(db, "reviews"), {
         text: newReviewText,
         createdAt: serverTimestamp(),
+        replies: [] // 返信を格納するための空配列を初期値としてセット
       });
       setNewReviewText("");
-      setUserPasscode("");
       setReviewStatus("🎉 つぶやきを投稿しました！");
 
       setTimeout(() => {
@@ -64,7 +55,7 @@ export default function NewReviewPage() {
             💬 つぶやきを投稿する
           </h2>
           <p style={{ fontSize: "11px", color: "#718096", margin: "0 0 16px 0", lineHeight: "1.4" }}>
-            本文中に<strong>「種目名」</strong>を入れると、各アトラクションの詳細ページにも自動で表示されます！
+            本文中に<strong>「種目名」</strong>を入れると、各アトラクションの詳細ページにも自動で表示されます！パスコードは不要になりました。
           </p>
 
           <form onSubmit={handlePostReview} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
@@ -82,27 +73,6 @@ export default function NewReviewPage() {
                   border: "1px solid #cbd5e0",
                   fontSize: "13px",
                   resize: "none",
-                  outline: "none",
-                  color: "#1a202c",
-                  backgroundColor: "white",
-                  boxSizing: "border-box"
-                }}
-              />
-            </div>
-
-            <div>
-              <label style={{ fontSize: "12px", fontWeight: "bold", color: "#4a5568", display: "block", marginBottom: "6px" }}>投稿用パスコード（数字4桁）</label>
-              <input
-                type="password"
-                placeholder="4桁の数字を入力"
-                value={userPasscode}
-                onChange={(e) => setUserPasscode(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  borderRadius: "8px",
-                  border: "1px solid #cbd5e0",
-                  fontSize: "13px",
                   outline: "none",
                   color: "#1a202c",
                   backgroundColor: "white",
