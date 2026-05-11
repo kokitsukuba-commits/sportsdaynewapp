@@ -34,7 +34,6 @@ interface Reply {
   createdAt: string; 
 }
 
-// 💬 リアクション用の型定義
 interface Reactions {
   like?: number;    // 👍
   love?: number;    // ❤️
@@ -51,7 +50,6 @@ interface Review {
   reactions?: Reactions; 
 }
 
-// 利用可能なリアクション一覧
 const REACTION_EMOJIS = [
   { key: "like", emoji: "👍" },
   { key: "love", emoji: "❤️" },
@@ -110,7 +108,6 @@ export default function UserPage() {
     };
   }, []);
 
-  // 返信送信処理
   const handlePostReply = async (reviewId: string) => {
     const replyText = replyInputs[reviewId];
     if (!replyText || !replyText.trim()) return;
@@ -133,7 +130,6 @@ export default function UserPage() {
     }
   };
 
-  // リアクション追加処理
   const handleAddReaction = async (reviewId: string, reactionKey: keyof Reactions) => {
     try {
       const reviewRef = doc(db, "reviews", reviewId);
@@ -153,7 +149,6 @@ export default function UserPage() {
 
   const toggleExpand = (id: string) => {
     setExpandedSportId(expandedSportId === id ? null : id);
-    // マップ上のピンをタップした際に、該当のアコーディオン位置まで画面をスクロールさせる
     setTimeout(() => {
       const element = document.getElementById(`sport-card-${id}`);
       if (element) {
@@ -164,10 +159,10 @@ export default function UserPage() {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", fontFamily: "sans-serif", color: "#5a2575" }}>
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", fontFamily: "sans-serif", backgroundColor: "#f5f3ff" }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{ border: "4px solid #f3f3f3", borderTop: "4px solid #5a2575", borderRadius: "50%", width: "40px", height: "40px", animation: "spin 1s linear infinite", margin: "0 auto 15px auto" }}></div>
-          <p style={{ fontWeight: "bold" }}>情報を読み込み中...</p>
+          <div style={{ border: "4px solid #e9d8fd", borderTop: "4px solid #7c3aed", borderRadius: "50%", width: "45px", height: "45px", animation: "spin 1s linear infinite", margin: "0 auto 15px auto" }}></div>
+          <p style={{ fontWeight: "800", color: "#6b21a8", fontSize: "14px" }}>ワクワクを読み込み中...</p>
         </div>
         <style jsx global>{`
           @keyframes spin {
@@ -180,56 +175,81 @@ export default function UserPage() {
   }
 
   return (
-    <div style={{ backgroundColor: "#f7f9fc", minHeight: "100vh", fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif", position: "relative", paddingBottom: "100px" }}>
-      {/* ヘッダー */}
-      <header style={{ backgroundColor: "#5a2575", color: "white", padding: "24px 16px", textAlign: "center", boxShadow: "0 4px 12px rgba(90, 37, 117, 0.2)", borderRadius: "0 0 20px 20px" }}>
-        <h1 style={{ fontSize: "22px", fontWeight: "800", margin: 0, letterSpacing: "1px" }}>
+    <div style={{ backgroundColor: "#fbfbfe", minHeight: "100vh", fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif", position: "relative", paddingBottom: "110px", color: "#2d3748" }}>
+      
+      {/* 🔮 ヘッダー（グラデーション×ポップ） */}
+      <header style={{ 
+        background: "linear-gradient(135deg, #6b21a8 0%, #4c1d95 100%)", 
+        color: "white", 
+        padding: "32px 16px 28px 16px", 
+        textAlign: "center", 
+        boxShadow: "0 6px 20px rgba(76, 29, 149, 0.15)", 
+        borderRadius: "0 0 28px 28px",
+        position: "relative",
+        overflow: "hidden"
+      }}>
+        {/* 背景のポップな丸飾り */}
+        <div style={{ position: "absolute", top: "-20px", left: "-20px", width: "80px", height: "80px", borderRadius: "50%", background: "rgba(163, 230, 53, 0.15)" }}></div>
+        <div style={{ position: "absolute", bottom: "-30px", right: "-10px", width: "100px", height: "100px", borderRadius: "50%", background: "rgba(163, 230, 53, 0.1)" }}></div>
+
+        <h1 style={{ fontSize: "24px", fontWeight: "900", margin: 0, letterSpacing: "1.5px", textShadow: "0 2px 4px rgba(0,0,0,0.2)" }}>
           🏆 Tsukuba Sports Day
         </h1>
-        <p style={{ fontSize: "12px", opacity: 0.9, margin: "6px 0 0 0", fontWeight: "500" }}>
-          リアルタイム待ち時間 ＆ 会場ガイド
+        <p style={{ 
+          fontSize: "12px", 
+          backgroundColor: "#a3e635", 
+          color: "#4c1d95", 
+          margin: "10px auto 0 auto", 
+          fontWeight: "800",
+          padding: "4px 12px",
+          borderRadius: "30px",
+          display: "inline-block",
+          boxShadow: "0 2px 8px rgba(163,230,83,0.3)"
+        }}>
+          ⚡️ リアルタイム待ち時間 ＆ 会場ガイド
         </p>
       </header>
 
-      {/* 🗺️ 会場エリアマップ（画面目一杯に大きく表示するセクション） */}
-      <section style={{ marginBottom: "28px", backgroundColor: "white", boxShadow: "0 4px 12px rgba(0,0,0,0.03)", borderBottom: "1px solid #e2e8f0" }}>
-        <div style={{ padding: "14px 14px 4px 14px", maxWidth: "550px", margin: "0 auto" }}>
-          <h2 style={{ fontSize: "15px", color: "#2d3748", fontWeight: "700", margin: 0 }}>
-            🗺️ 会場エリアマップ（リアルタイム待ち時間）
+      {/* 🗺️ 会場エリアマップ */}
+      <section style={{ marginBottom: "32px", backgroundColor: "white", boxShadow: "0 4px 16px rgba(0,0,0,0.02)", borderBottom: "1px solid #e8e8f3" }}>
+        <div style={{ padding: "18px 16px 4px 16px", maxWidth: "550px", margin: "0 auto" }}>
+          <h2 style={{ fontSize: "16px", color: "#4c1d95", fontWeight: "900", margin: 0, display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ fontSize: "20px" }}>🗺️</span> 会場エリアマップ
           </h2>
         </div>
         
-        {/* 地図とピンを重ねる親コンテナ：幅制限をなくし画面全幅に */}
         <div style={{ 
           position: "relative", 
           width: "100%", 
-          maxWidth: "800px", // マップ表示の最大上限をアップ
-          margin: "10px auto 0 auto",
+          maxWidth: "800px", 
+          margin: "12px auto 0 auto",
           overflow: "hidden", 
-          backgroundColor: "#f7fafc",
-          borderTop: "1px solid #edf2f7",
-          borderBottom: "1px solid #edf2f7"
+          backgroundColor: "#f5f3ff",
+          borderTop: "3px solid #6b21a8",
+          borderBottom: "3px solid #6b21a8"
         }}>
-          {/* 会場マップ画像 */}
           <img 
             src="/map.jpg" 
             alt="スポーツ・デー 会場マップ"
             style={{ width: "100%", height: "auto", display: "block" }}
           />
 
-          {/* マップ上に浮かべるリアルタイム待ち時間ピン群 */}
+          {/* マップ上の数字ピン */}
           {sports.map((sport) => {
-            // 混雑度によるピンカラー変更
-            let pinColor = "#38a169"; // スムーズ（緑）
+            // 緑（スムーズ）と赤（混雑）のカラーコード（ポップに調整）
+            let pinBg = "#84cc16"; // ライムグリーン
+            let pinTextColor = "#ffffff";
+            let pinBorder = "#4d7c0f";
+
             if (sport.waitingTime > 20) {
-              pinColor = "#e53e3e"; // 混雑（赤）
+              pinBg = "#ef4444"; // ビビッドレッド
+              pinBorder = "#991b1b";
             } else if (sport.waitingTime > 0) {
-              pinColor = "#dd6b20"; // やや混雑（オレンジ）
+              pinBg = "#f97316"; // ポップオレンジ
+              pinBorder = "#c2410c";
             }
 
-            // 📍 会場図に合わせた実寸座標マッピング
             let position = { top: "50%", left: "50%" }; 
-
             const name = sport.name;
             if (name.includes("モルック")) {
               position = { top: "21%", left: "28%" };
@@ -254,53 +274,52 @@ export default function UserPage() {
             return (
               <div
                 key={`pin-${sport.id}`}
-                onClick={() => toggleExpand(sport.id)} // タップしたら詳細を開いてスクロール
+                onClick={() => toggleExpand(sport.id)}
                 style={{
                   position: "absolute",
                   top: position.top,
                   left: position.left,
-                  transform: "translate(-50%, -100%)", // ピンの底辺を基準にする
+                  transform: "translate(-50%, -100%)",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
                   cursor: "pointer",
-                  filter: "drop-shadow(0px 4px 6px rgba(0,0,0,0.3))",
+                  filter: "drop-shadow(0px 6px 8px rgba(0,0,0,0.25))",
                   zIndex: 10,
-                  transition: "transform 0.15s ease"
+                  transition: "transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
                 }}
-                onMouseDown={(e) => e.currentTarget.style.transform = "translate(-50%, -100%) scale(0.95)"}
-                onMouseUp={(e) => e.currentTarget.style.transform = "translate(-50%, -100%) scale(1)"}
+                onMouseDown={(e) => e.currentTarget.style.transform = "translate(-50%, -100%) scale(0.9)"}
+                onMouseUp={(e) => e.currentTarget.style.transform = "translate(-50%, -100%) scale(1.1)"}
               >
-                {/* ピン型ポップアップデザイン */}
+                {/* 丸っこくしてアメコミ風の少し太めの枠線にしたピン */}
                 <div style={{
-                  backgroundColor: "white",
-                  padding: "5px 10px", // 少しピンのサイズも大きくしてタップしやすく
-                  borderRadius: "9px",
-                  border: `2px solid ${pinColor}`,
+                  backgroundColor: pinBg,
+                  padding: "5px 11px",
+                  borderRadius: "12px",
+                  border: `2px solid ${pinBorder}`,
                   textAlign: "center",
-                  boxShadow: "inset 0 1px 2px rgba(0,0,0,0.05)"
+                  boxShadow: "inset 0 2px 4px rgba(255,255,255,0.3)"
                 }}>
-                  {/* 待ち時間のみ表示 */}
                   <div style={{ 
-                    fontSize: "14px", // フォントサイズを1pxアップして視認性向上
+                    fontSize: "15px", 
                     fontWeight: "900", 
-                    color: pinColor, 
-                    lineHeight: "1",
+                    color: pinTextColor, 
+                    lineHeight: "1.1",
                     display: "flex",
                     alignItems: "baseline",
                     justifyContent: "center"
                   }}>
                     {sport.waitingTime}
-                    <span style={{ fontSize: "9px", fontWeight: "bold", marginLeft: "1px", color: "#718096" }}>分</span>
+                    <span style={{ fontSize: "10px", marginLeft: "1.5px", opacity: 0.9 }}>分</span>
                   </div>
                 </div>
-                {/* 三角のしっぽ */}
+                {/* ピンのしっぽ */}
                 <div style={{
                   width: 0,
                   height: 0,
                   borderLeft: "6px solid transparent",
                   borderRight: "6px solid transparent",
-                  borderTop: `6px solid ${pinColor}`,
+                  borderTop: `6px solid ${pinBorder}`,
                   marginTop: "-1px"
                 }}></div>
               </div>
@@ -308,38 +327,45 @@ export default function UserPage() {
           })}
         </div>
         
-        <div style={{ padding: "8px 14px 14px 14px", maxWidth: "550px", margin: "0 auto" }}>
-          <p style={{ fontSize: "10px", color: "#718096", margin: 0, lineHeight: "1.4" }}>
-            ※マップ上の数字ピンをタップすると、下部の該当アトラクション詳細まで直接移動し、開くことができます。
+        <div style={{ padding: "10px 16px 16px 16px", maxWidth: "550px", margin: "0 auto" }}>
+          <p style={{ fontSize: "11px", color: "#6b7280", margin: 0, lineHeight: "1.5", fontWeight: "500" }}>
+            💡 <strong style={{ color: "#6b21a8" }}>ピンをタップ</strong>すると、下部のアトラクション詳細カードへスクロールして自動で開きます！
           </p>
         </div>
       </section>
 
-      {/* メイン幅（お知らせ、リスト、つぶやき用） */}
-      <main style={{ maxWidth: "550px", margin: "0 auto", padding: "0 12px 40px 12px" }}>
+      {/* メインコンテンツ */}
+      <main style={{ maxWidth: "550px", margin: "0 auto", padding: "0 14px 40px 14px" }}>
         
-        {/* 📢 アナウンスセクション */}
-        <section style={{ marginBottom: "28px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", borderBottom: "2px solid #5a2575", paddingBottom: "6px" }}>
-            <h2 style={{ fontSize: "15px", color: "#5a2575", fontWeight: "700", margin: 0 }}>
+        {/* 📢 運営からのお知らせ */}
+        <section style={{ marginBottom: "32px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", borderBottom: "3px solid #6b21a8", paddingBottom: "8px" }}>
+            <h2 style={{ fontSize: "16px", color: "#4c1d95", fontWeight: "900", margin: 0 }}>
               📢 運営からのお知らせ
             </h2>
-            <span style={{ fontSize: "10px", backgroundColor: "#e9d8fd", color: "#5a2575", padding: "2px 8px", borderRadius: "10px", fontWeight: "bold" }}>LIVE</span>
+            <span style={{ fontSize: "11px", backgroundColor: "#a3e635", color: "#3f6212", padding: "3px 10px", borderRadius: "12px", fontWeight: "900" }}>LIVE</span>
           </div>
           
           {announcements.length === 0 ? (
-            <div style={{ backgroundColor: "white", borderRadius: "12px", padding: "20px", textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-              <p style={{ color: "#a0aec0", fontSize: "13px", margin: 0 }}>現在、新しいお知らせはありません。</p>
+            <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "24px", textAlign: "center", border: "2px solid #e9d8fd" }}>
+              <p style={{ color: "#a0aec0", fontSize: "13px", margin: 0, fontWeight: "500" }}>現在、新しいお知らせはありません。</p>
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {announcements.map((ann) => (
-                <div key={ann.id} style={{ backgroundColor: "white", borderRadius: "12px", padding: "14px 16px", boxShadow: "0 4px 10px rgba(0,0,0,0.03)", borderLeft: "5px solid #5a2575" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "4px" }}>
-                    <h3 style={{ fontSize: "14px", fontWeight: "700", color: "#1a202c", margin: 0 }}>{ann.title}</h3>
-                    <span style={{ fontSize: "10px", color: "#a0aec0" }}>{formatTime(ann.createdAt)}</span>
+                <div key={ann.id} style={{ 
+                  backgroundColor: "white", 
+                  borderRadius: "16px", 
+                  padding: "16px 18px", 
+                  boxShadow: "0 6px 0px rgba(107, 33, 168, 0.1)", 
+                  border: "2px solid #e9d8fd",
+                  borderLeft: "6px solid #6b21a8"
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "6px" }}>
+                    <h3 style={{ fontSize: "14px", fontWeight: "900", color: "#1a202c", margin: 0 }}>{ann.title}</h3>
+                    <span style={{ fontSize: "10px", color: "#7c3aed", fontWeight: "bold" }}>{formatTime(ann.createdAt)}</span>
                   </div>
-                  <p style={{ fontSize: "12px", color: "#4a5568", margin: 0, lineHeight: "1.5", whiteSpace: "pre-wrap" }}>
+                  <p style={{ fontSize: "12px", color: "#4b5563", margin: 0, lineHeight: "1.6", whiteSpace: "pre-wrap", fontWeight: "500" }}>
                     {ann.content}
                   </p>
                 </div>
@@ -348,27 +374,31 @@ export default function UserPage() {
           )}
         </section>
 
-        {/* ⏱ 各アトラクション情報セクション */}
-        <section style={{ marginBottom: "32px" }}>
-          <div style={{ borderBottom: "2px solid #2d3748", paddingBottom: "6px", marginBottom: "16px" }}>
-            <h2 style={{ fontSize: "15px", color: "#2d3748", fontWeight: "700", margin: 0 }}>
+        {/* ⏱ 各アトラクション情報 */}
+        <section style={{ marginBottom: "36px" }}>
+          <div style={{ borderBottom: "3px solid #4c1d95", paddingBottom: "8px", marginBottom: "18px" }}>
+            <h2 style={{ fontSize: "16px", color: "#4c1d95", fontWeight: "900", margin: 0 }}>
               ⏱ 各アトラクション情報
             </h2>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             {sports.map((sport) => {
-              let statusColor = "#38a169";
+              let statusBg = "#f0fdf4";
+              let statusBorder = "#bbf7d0";
+              let statusColor = "#15803d";
               let statusText = "スムーズ";
-              let bgLight = "#f0fff4";
+
               if (sport.waitingTime > 20) {
-                statusColor = "#e53e3e";
-                statusText = "混雑";
-                bgLight = "#fff5f5";
+                statusBg = "#fef2f2";
+                statusBorder = "#fecaca";
+                statusColor = "#b91c1c";
+                statusText = "大混雑中";
               } else if (sport.waitingTime > 0) {
-                statusColor = "#dd6b20";
+                statusBg = "#fff7ed";
+                statusBorder = "#ffedd5";
+                statusColor = "#c2410c";
                 statusText = "やや混雑";
-                bgLight = "#fffaf0";
               }
 
               const filteredReviews = reviews.filter(rev => 
@@ -380,15 +410,15 @@ export default function UserPage() {
               return (
                 <div
                   key={sport.id}
-                  id={`sport-card-${sport.id}`} // スクロールジャンプ用のID
+                  id={`sport-card-${sport.id}`}
                   style={{
                     backgroundColor: "white",
-                    borderRadius: "16px",
+                    borderRadius: "20px",
                     overflow: "hidden",
-                    boxShadow: "0 6px 15px rgba(0,0,0,0.04)",
-                    border: isExpanded ? "1.5px solid #5a2575" : "1px solid #e2e8f0",
-                    padding: "16px",
-                    transition: "all 0.2s ease-in-out"
+                    boxShadow: isExpanded ? "0 8px 0px rgba(107, 33, 168, 0.15)" : "0 4px 0px rgba(226, 232, 240, 0.8)",
+                    border: isExpanded ? "3px solid #6b21a8" : "2px solid #e2e8f0",
+                    padding: "16px 18px",
+                    transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.1)"
                   }}
                 >
                   <div 
@@ -396,71 +426,99 @@ export default function UserPage() {
                     style={{ 
                       display: "flex", 
                       justifyContent: "space-between", 
-                      alignItems: "flex-start", 
+                      alignItems: "center", 
                       cursor: "pointer",
                       userSelect: "none"
                     }}
                   >
-                    <div style={{ flex: 1, paddingRight: "8px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1a202c", margin: 0 }}>{sport.name}</h3>
-                        <span style={{ fontSize: "10px", color: "#a0aec0" }}>
-                          {isExpanded ? "▲ 閉じる" : "▼ タップで詳細"}
+                    <div style={{ flex: 1, paddingRight: "10px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                        <h3 style={{ fontSize: "17px", fontWeight: "900", color: "#1e1b4b", margin: 0 }}>{sport.name}</h3>
+                        <span style={{ 
+                          fontSize: "10px", 
+                          backgroundColor: "#f3e8ff", 
+                          color: "#6b21a8", 
+                          padding: "2px 8px", 
+                          borderRadius: "8px", 
+                          fontWeight: "800" 
+                        }}>
+                          {isExpanded ? "▲ 閉じる" : "▼ 詳細・つぶやき"}
                         </span>
                       </div>
-                      <div style={{ display: "flex", gap: "6px", alignItems: "center", marginTop: "8px" }}>
-                        <span style={{ fontSize: "11px", backgroundColor: "#f7fafc", border: "1px solid #e2e8f0", padding: "3px 8px", borderRadius: "20px", color: "#4a5568", fontWeight: "500" }}>
+                      <div style={{ display: "flex", gap: "8px", alignItems: "center", marginTop: "10px" }}>
+                        <span style={{ fontSize: "11px", backgroundColor: "#f3f4f6", border: "1.5px solid #e5e7eb", padding: "4px 10px", borderRadius: "12px", color: "#374151", fontWeight: "700" }}>
                           📍 {sport.location}
                         </span>
-                        <span style={{ fontSize: "11px", backgroundColor: bgLight, color: statusColor, padding: "3px 8px", borderRadius: "20px", fontWeight: "700" }}>
+                        <span style={{ 
+                          fontSize: "11px", 
+                          backgroundColor: statusBg, 
+                          border: `1.5px solid ${statusBorder}`, 
+                          color: statusColor, 
+                          padding: "4px 10px", 
+                          borderRadius: "12px", 
+                          fontWeight: "900" 
+                        }}>
                           {statusText}
                         </span>
                       </div>
                     </div>
 
-                    <div style={{ textAlign: "right" }}>
+                    <div style={{ textAlign: "right", minWidth: "75px" }}>
                       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "flex-end" }}>
-                        <span style={{ fontSize: "32px", fontWeight: "800", color: statusColor, lineHeight: "1" }}>
+                        <span style={{ fontSize: "36px", fontWeight: "900", color: statusColor, lineHeight: "1" }}>
                           {sport.waitingTime}
                         </span>
-                        <span style={{ fontSize: "11px", marginLeft: "2px", color: "#718096", fontWeight: "bold" }}>分</span>
+                        <span style={{ fontSize: "12px", marginLeft: "2px", color: "#4b5563", fontWeight: "900" }}>分</span>
                       </div>
-                      <span style={{ fontSize: "9px", color: "#a0aec0", display: "block", marginTop: "4px" }}>
+                      <span style={{ fontSize: "9px", color: "#9ca3af", display: "block", marginTop: "6px", fontWeight: "700" }}>
                         更新: {formatTime(sport.updatedAt)}
                       </span>
                     </div>
                   </div>
 
                   {isExpanded && (
-                    <div style={{ animation: "fadeIn 0.25s ease-out" }}>
+                    <div style={{ animation: "fadeIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.1)" }}>
                       {sport.description && (
-                        <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px dashed #edf2f7", fontSize: "12px", color: "#4a5568", lineHeight: "1.5" }}>
+                        <div style={{ 
+                          marginTop: "16px", 
+                          paddingTop: "16px", 
+                          borderTop: "2.5px dashed #f3e8ff", 
+                          fontSize: "13px", 
+                          color: "#4b5563", 
+                          lineHeight: "1.6",
+                          fontWeight: "500"
+                        }}>
                           <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{sport.description}</p>
                         </div>
                       )}
 
-                      <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #edf2f7" }}>
-                        <span style={{ fontSize: "11px", fontWeight: "bold", color: "#5a2575", display: "block", marginBottom: "8px" }}>
-                          💬 参加者のリアルな口コミ ({filteredReviews.length}件)
+                      <div style={{ marginTop: "16px", paddingTop: "16px", borderTop: "2px solid #f3f4f6" }}>
+                        <span style={{ fontSize: "12px", fontWeight: "900", color: "#6b21a8", display: "block", marginBottom: "10px" }}>
+                          💬 この種目のリアルつぶやき ({filteredReviews.length}件)
                         </span>
                         
                         {filteredReviews.length === 0 ? (
-                          <p style={{ color: "#a0aec0", fontSize: "11px", margin: "4px 0 0 0", fontStyle: "italic" }}>
-                            現在、この種目に関するつぶやきはありません。右下の＋ボタンから最初のつぶやきを投稿してみよう！
+                          <p style={{ color: "#9ca3af", fontSize: "12px", margin: "4px 0 0 0", fontStyle: "italic", fontWeight: "500" }}>
+                            現在、この種目に関するつぶやきはありません。右下の＋ボタンから最初の声を投稿してみてね！
                           </p>
                         ) : (
-                          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                             {filteredReviews.map((rev) => (
-                              <div key={rev.id} style={{ backgroundColor: "#fbf7ff", padding: "12px", borderRadius: "8px", border: "1px solid #f3ebfa" }}>
-                                <p style={{ fontSize: "13px", color: "#2d3748", margin: "0 0 4px 0", lineHeight: "1.4", fontWeight: "500" }}>
+                              <div key={rev.id} style={{ 
+                                backgroundColor: "#faf5ff", 
+                                padding: "14px", 
+                                borderRadius: "14px", 
+                                border: "2px solid #f3e8ff" 
+                              }}>
+                                <p style={{ fontSize: "13px", color: "#1e1b4b", margin: "0 0 6px 0", lineHeight: "1.5", fontWeight: "600" }}>
                                   {rev.text}
                                 </p>
-                                <span style={{ fontSize: "9px", color: "#a0aec0", display: "block", marginBottom: "8px" }}>
+                                <span style={{ fontSize: "10px", color: "#9ca3af", display: "block", marginBottom: "10px", fontWeight: "600" }}>
                                   {formatTime(rev.createdAt)}
                                 </span>
 
-                                {/* 👍 リアクションエリア */}
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "10px" }}>
+                                {/* 👍 リアクションボタン */}
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "12px" }}>
                                   {REACTION_EMOJIS.map((item) => {
                                     const count = rev.reactions?.[item.key] || 0;
                                     return (
@@ -471,51 +529,88 @@ export default function UserPage() {
                                           display: "flex",
                                           alignItems: "center",
                                           gap: "4px",
-                                          backgroundColor: "white",
-                                          border: "1px solid #e2e8f0",
-                                          borderRadius: "20px",
-                                          padding: "3px 8px",
-                                          fontSize: "11px",
+                                          backgroundColor: count > 0 ? "#f3e8ff" : "white",
+                                          border: count > 0 ? "2px solid #c084fc" : "2px solid #e5e7eb",
+                                          borderRadius: "14px",
+                                          padding: "4px 10px",
+                                          fontSize: "12px",
                                           cursor: "pointer",
-                                          boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
-                                          transition: "transform 0.1s"
+                                          transition: "all 0.1s ease"
                                         }}
-                                        onMouseDown={(e) => e.currentTarget.style.transform = "scale(0.92)"}
+                                        onMouseDown={(e) => e.currentTarget.style.transform = "scale(0.9)"}
                                         onMouseUp={(e) => e.currentTarget.style.transform = "scale(1)"}
                                       >
                                         <span>{item.emoji}</span>
-                                        <span style={{ fontWeight: "bold", color: count > 0 ? "#5a2575" : "#a0aec0" }}>{count}</span>
+                                        <span style={{ fontWeight: "900", color: count > 0 ? "#6b21a8" : "#9ca3af" }}>{count}</span>
                                       </button>
                                     );
                                   })}
                                 </div>
 
-                                {/* 💬 返信一覧 */}
+                                {/* 💬 返信 */}
                                 {rev.replies && rev.replies.length > 0 && (
-                                  <div style={{ backgroundColor: "#f3f4f6", padding: "8px 10px", borderRadius: "8px", display: "flex", flexDirection: "column", gap: "6px", marginTop: "6px", border: "1px solid #e5e7eb" }}>
+                                  <div style={{ 
+                                    backgroundColor: "white", 
+                                    padding: "10px 12px", 
+                                    borderRadius: "12px", 
+                                    display: "flex", 
+                                    flexDirection: "column", 
+                                    gap: "8px", 
+                                    marginTop: "8px", 
+                                    border: "2px solid #f3e8ff" 
+                                  }}>
                                     {rev.replies.map((reply, idx) => (
-                                      <div key={idx} style={{ fontSize: "11px", borderBottom: idx !== rev.replies!.length - 1 ? "1px solid #e5e7eb" : "none", paddingBottom: "4px" }}>
-                                        <span style={{ color: "#718096", fontSize: "9px", display: "block", fontWeight: "bold" }}>💬 返信 ({reply.createdAt})</span>
-                                        <p style={{ margin: "2px 0 0 0", color: "#2d3748", lineHeight: "1.4" }}>{reply.text}</p>
+                                      <div key={idx} style={{ 
+                                        fontSize: "12px", 
+                                        borderBottom: idx !== rev.replies!.length - 1 ? "1.5px solid #f3e8ff" : "none", 
+                                        paddingBottom: "6px" 
+                                      }}>
+                                        <span style={{ color: "#7c3aed", fontSize: "10px", display: "block", fontWeight: "800" }}>
+                                          💬 運営・参加者からの返信 ({reply.createdAt})
+                                        </span>
+                                        <p style={{ margin: "4px 0 0 0", color: "#374151", lineHeight: "1.5", fontWeight: "500" }}>{reply.text}</p>
                                       </div>
                                     ))}
                                   </div>
                                 )}
 
-                                {/* 💬 返信書き込みフォーム */}
-                                <div style={{ display: "flex", gap: "6px", marginTop: "8px" }}>
+                                {/* 💬 返信投稿 */}
+                                <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
                                   <input 
                                     type="text"
-                                    placeholder="返信を書き込む..."
+                                    placeholder="返答を入力..."
                                     value={replyInputs[rev.id] || ""}
                                     onChange={(e) => setReplyInputs(prev => ({ ...prev, [rev.id]: e.target.value }))}
-                                    style={{ flex: 1, padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e0", fontSize: "11px", outline: "none", boxSizing: "border-box", color: "#1a202c", backgroundColor: "white" }}
+                                    style={{ 
+                                      flex: 1, 
+                                      padding: "8px 12px", 
+                                      borderRadius: "10px", 
+                                      border: "2px solid #e5e7eb", 
+                                      fontSize: "12px", 
+                                      outline: "none", 
+                                      boxSizing: "border-box", 
+                                      color: "#1f2937", 
+                                      backgroundColor: "white",
+                                      fontWeight: "500"
+                                    }}
                                   />
                                   <button
                                     onClick={() => handlePostReply(rev.id)}
-                                    style={{ backgroundColor: "#5a2575", color: "white", border: "none", borderRadius: "6px", padding: "5px 12px", fontSize: "11px", fontWeight: "bold", cursor: "pointer" }}
+                                    style={{ 
+                                      backgroundColor: "#a3e635", 
+                                      color: "#3f6212", 
+                                      border: "2px solid #4d7c0f", 
+                                      borderRadius: "10px", 
+                                      padding: "8px 16px", 
+                                      fontSize: "12px", 
+                                      fontWeight: "900", 
+                                      cursor: "pointer",
+                                      boxShadow: "0 2px 0px #4d7c0f"
+                                    }}
+                                    onMouseDown={(e) => e.currentTarget.style.transform = "translateY(2px)"}
+                                    onMouseUp={(e) => e.currentTarget.style.transform = "translateY(0px)"}
                                   >
-                                    返信
+                                    送信
                                   </button>
                                 </div>
 
@@ -533,21 +628,32 @@ export default function UserPage() {
         </section>
 
         {/* 💬 みんなの最新のつぶやき */}
-        <section style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px", boxShadow: "0 4px 12px rgba(90, 37, 117, 0.05)", border: "1px solid #e2e8f0" }}>
-          <h2 style={{ fontSize: "15px", color: "#5a2575", fontWeight: "700", margin: "0 0 12px 0" }}>
-            💬 みんなの最新のつぶやき
+        <section style={{ 
+          backgroundColor: "white", 
+          borderRadius: "24px", 
+          padding: "24px 20px", 
+          boxShadow: "0 6px 0px rgba(107, 33, 168, 0.08)", 
+          border: "3px solid #6b21a8" 
+        }}>
+          <h2 style={{ fontSize: "16px", color: "#6b21a8", fontWeight: "900", margin: "0 0 16px 0", display: "flex", alignItems: "center", gap: "6px" }}>
+            <span>💬</span> みんなの最新のつぶやき
           </h2>
           {reviews.length === 0 ? (
-            <p style={{ color: "#a0aec0", fontSize: "11px", margin: 0 }}>まだ投稿はありません。最初の声を届けよう！</p>
+            <p style={{ color: "#9ca3af", fontSize: "12px", margin: 0, fontWeight: "500" }}>まだ投稿はありません。最初の声を届けよう！</p>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {reviews.slice(0, 5).map((rev) => ( 
-                <div key={rev.id} style={{ backgroundColor: "#f7fafc", borderRadius: "8px", padding: "12px", border: "1px solid #e2e8f0" }}>
-                  <p style={{ fontSize: "13px", color: "#2d3748", margin: "0 0 4px 0", lineHeight: "1.4", fontWeight: "500" }}>{rev.text}</p>
-                  <span style={{ fontSize: "9px", color: "#a0aec0", display: "block", marginBottom: "8px" }}>{formatTime(rev.createdAt)}</span>
+                <div key={rev.id} style={{ 
+                  backgroundColor: "#fbfbfe", 
+                  borderRadius: "14px", 
+                  padding: "14px", 
+                  border: "2px solid #e5e7eb" 
+                }}>
+                  <p style={{ fontSize: "13px", color: "#1e1b4b", margin: "0 0 6px 0", lineHeight: "1.5", fontWeight: "600" }}>{rev.text}</p>
+                  <span style={{ fontSize: "10px", color: "#9ca3af", display: "block", marginBottom: "10px", fontWeight: "600" }}>{formatTime(rev.createdAt)}</span>
 
                   {/* 👍 リアクションエリア */}
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "10px" }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "12px" }}>
                     {REACTION_EMOJIS.map((item) => {
                       const count = rev.reactions?.[item.key] || 0;
                       return (
@@ -558,20 +664,17 @@ export default function UserPage() {
                             display: "flex",
                             alignItems: "center",
                             gap: "4px",
-                            backgroundColor: "white",
-                            border: "1px solid #e2e8f0",
-                            borderRadius: "20px",
-                            padding: "3px 8px",
-                            fontSize: "11px",
+                            backgroundColor: count > 0 ? "#f3e8ff" : "white",
+                            border: count > 0 ? "2px solid #c084fc" : "2px solid #e5e7eb",
+                            borderRadius: "14px",
+                            padding: "4px 10px",
+                            fontSize: "12px",
                             cursor: "pointer",
-                            boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
-                            transition: "transform 0.1s"
+                            transition: "all 0.1s"
                           }}
-                          onMouseDown={(e) => e.currentTarget.style.transform = "scale(0.92)"}
-                          onMouseUp={(e) => e.currentTarget.style.transform = "scale(1)"}
                         >
                           <span>{item.emoji}</span>
-                          <span style={{ fontWeight: "bold", color: count > 0 ? "#5a2575" : "#a0aec0" }}>{count}</span>
+                          <span style={{ fontWeight: "900", color: count > 0 ? "#6b21a8" : "#9ca3af" }}>{count}</span>
                         </button>
                       );
                     })}
@@ -579,30 +682,64 @@ export default function UserPage() {
 
                   {/* 💬 返信一覧 */}
                   {rev.replies && rev.replies.length > 0 && (
-                    <div style={{ backgroundColor: "#edf2f7", padding: "8px 10px", borderRadius: "8px", display: "flex", flexDirection: "column", gap: "6px", marginTop: "6px", border: "1px solid #e2e8f0" }}>
+                    <div style={{ 
+                      backgroundColor: "white", 
+                      padding: "10px 12px", 
+                      borderRadius: "12px", 
+                      display: "flex", 
+                      flexDirection: "column", 
+                      gap: "8px", 
+                      marginTop: "8px", 
+                      border: "2px solid #f3e8ff" 
+                    }}>
                       {rev.replies.map((reply, idx) => (
-                        <div key={idx} style={{ fontSize: "11px", borderBottom: idx !== rev.replies!.length - 1 ? "1px solid #e2e8f0" : "none", paddingBottom: "4px" }}>
-                          <span style={{ color: "#718096", fontSize: "9px", display: "block", fontWeight: "bold" }}>💬 返信 ({reply.createdAt})</span>
-                          <p style={{ margin: "2px 0 0 0", color: "#2d3748", lineHeight: "1.4" }}>{reply.text}</p>
+                        <div key={idx} style={{ 
+                          fontSize: "12px", 
+                          borderBottom: idx !== rev.replies!.length - 1 ? "1.5px solid #f3e8ff" : "none", 
+                          paddingBottom: "6px" 
+                        }}>
+                          <span style={{ color: "#7c3aed", fontSize: "10px", display: "block", fontWeight: "800" }}>💬 返信 ({reply.createdAt})</span>
+                          <p style={{ margin: "4px 0 0 0", color: "#374151", lineHeight: "1.5", fontWeight: "500" }}>{reply.text}</p>
                         </div>
                       ))}
                     </div>
                   )}
 
-                  {/* 💬 返信書き込みフォーム */}
-                  <div style={{ display: "flex", gap: "6px", marginTop: "8px" }}>
+                  {/* 💬 返信フォーム */}
+                  <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
                     <input 
                       type="text"
-                      placeholder="返信を書き込む..."
+                      placeholder="返答を入力..."
                       value={replyInputs[rev.id] || ""}
                       onChange={(e) => setReplyInputs(prev => ({ ...prev, [rev.id]: e.target.value }))}
-                      style={{ flex: 1, padding: "5px 8px", borderRadius: "6px", border: "1px solid #cbd5e0", fontSize: "11px", outline: "none", boxSizing: "border-box", color: "#1a202c", backgroundColor: "white" }}
+                      style={{ 
+                        flex: 1, 
+                        padding: "8px 12px", 
+                        borderRadius: "10px", 
+                        border: "2px solid #e5e7eb", 
+                        fontSize: "12px", 
+                        outline: "none", 
+                        boxSizing: "border-box", 
+                        color: "#1f2937", 
+                        backgroundColor: "white",
+                        fontWeight: "500"
+                      }}
                     />
                     <button
                       onClick={() => handlePostReply(rev.id)}
-                      style={{ backgroundColor: "#5a2575", color: "white", border: "none", borderRadius: "6px", padding: "5px 12px", fontSize: "11px", fontWeight: "bold", cursor: "pointer" }}
+                      style={{ 
+                        backgroundColor: "#a3e635", 
+                        color: "#3f6212", 
+                        border: "2px solid #4d7c0f", 
+                        borderRadius: "10px", 
+                        padding: "8px 16px", 
+                        fontSize: "12px", 
+                        fontWeight: "900", 
+                        cursor: "pointer",
+                        boxShadow: "0 2px 0px #4d7c0f"
+                      }}
                     >
-                      返信
+                      送信
                     </button>
                   </div>
 
@@ -613,32 +750,44 @@ export default function UserPage() {
         </section>
       </main>
 
-      {/* ➕ 新規投稿ボタン */}
+      {/* ➕ 新規投稿ボタン（ライムグリーンに紫ボーダーのポップデザイン） */}
       <Link href="/new" style={{
         position: "fixed",
-        bottom: "24px",
+        bottom: "28px",
         right: "24px",
-        backgroundColor: "#5a2575",
-        color: "white",
-        width: "56px",
-        height: "56px",
-        borderRadius: "50%",
+        backgroundColor: "#a3e635",
+        color: "#4c1d95",
+        width: "60px",
+        height: "60px",
+        borderRadius: "20px", // 少し丸っこい四角形に
+        border: "3px solid #4c1d95",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        fontSize: "28px",
-        boxShadow: "0 4px 16px rgba(90, 37, 117, 0.4)",
+        fontSize: "32px",
+        boxShadow: "0 6px 0px #4c1d95",
         cursor: "pointer",
         textDecoration: "none",
         zIndex: 100,
-        fontWeight: "300"
-      }}>
+        fontWeight: "900",
+        transition: "transform 0.1s, box-shadow 0.1s"
+      }}
+      // タップした時に少し沈むポップなアニメーション
+      onMouseDown={(e) => {
+        e.currentTarget.style.transform = "translateY(4px)";
+        e.currentTarget.style.boxShadow = "0 2px 0px #4c1d95";
+      }}
+      onMouseUp={(e) => {
+        e.currentTarget.style.transform = "translateY(0px)";
+        e.currentTarget.style.boxShadow = "0 6px 0px #4c1d95";
+      }}
+      >
         ＋
       </Link>
 
       <style jsx global>{`
         @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-4px); }
+          from { opacity: 0; transform: translateY(-6px); }
           to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
