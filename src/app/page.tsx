@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image"; // Next.jsのImageコンポーネントをインポート
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -157,7 +158,6 @@ export default function UserPage() {
     }, 150);
   };
 
-  // 全体で使うフォント指定（丸ゴシック優先、太め）
   const fontStyle = "'Hiragino Maru Gothic ProN', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif";
 
   if (loading) {
@@ -180,11 +180,11 @@ export default function UserPage() {
   return (
     <div style={{ backgroundColor: "#fbfbfe", minHeight: "100vh", fontFamily: fontStyle, position: "relative", paddingBottom: "110px", color: "#2d3748" }}>
       
-      {/* 🔮 ヘッダー（グラデーション×ポップ袋文字） */}
+      {/* ヘッダー */}
       <header style={{ 
         background: "linear-gradient(135deg, #6b21a8 0%, #4c1d95 100%)", 
         color: "white", 
-        padding: "36px 16px 32px 16px", 
+        padding: "32px 16px 28px 16px", 
         textAlign: "center", 
         boxShadow: "0 6px 20px rgba(76, 29, 149, 0.15)", 
         borderRadius: "0 0 28px 28px",
@@ -195,28 +195,57 @@ export default function UserPage() {
         <div style={{ position: "absolute", top: "-20px", left: "-20px", width: "80px", height: "80px", borderRadius: "50%", background: "rgba(163, 230, 53, 0.15)" }}></div>
         <div style={{ position: "absolute", bottom: "-30px", right: "-10px", width: "100px", height: "100px", borderRadius: "50%", background: "rgba(163, 230, 53, 0.1)" }}></div>
 
-        {/* 💥 ポップ袋文字タイトル（白文字×紫フチ×ライムグリーン影） */}
-        <h1 style={{ 
-          fontSize: "28px", 
-          fontWeight: "950", 
-          margin: 0, 
-          letterSpacing: "2px", 
-          color: "#ffffff",
-          textShadow: `
-            -2px -2px 0 #4c1d95,  
-             2px -2px 0 #4c1d95,
-            -2px  2px 0 #4c1d95,
-             2px  2px 0 #4c1d95,
-             4px  4px 0 #a3e635
-          `
+        {/* 💥 タイトルエリア（ロゴ×ポップ袋文字） */}
+        <div style={{ 
+          display: "flex", 
+          alignItems: "center", 
+          justifyContent: "center", 
+          gap: "12px", 
+          marginBottom: "12px"
         }}>
-          🏆 Tsukuba Sports Day
-        </h1>
+          {/* 💥 トロフィーの代わりにアップロードしてもらった「SD.png」を配置 */}
+          <div style={{
+            flexShrink: 0,
+            filter: `
+              drop-shadow(-1.5px -1.5px 0 #4c1d95)
+              drop-shadow(1.5px -1.5px 0 #4c1d95)
+              drop-shadow(-1.5px 1.5px 0 #4c1d95)
+              drop-shadow(1.5px 1.5px 0 #4c1d95)
+              drop-shadow(3px 3px 0px #a3e635)
+            `
+          }}>
+            <Image 
+              src="/SD.png" 
+              alt="Tsukuba Sports Day Logo"
+              width={55}  
+              height={55} 
+              style={{ objectFit: "contain" }}
+            />
+          </div>
+
+          <h1 style={{ 
+            fontSize: "26px", 
+            fontWeight: "950", 
+            margin: 0, 
+            letterSpacing: "1.5px", 
+            color: "#ffffff",
+            textShadow: `
+              -2px -2px 0 #4c1d95,  
+               2px -2px 0 #4c1d95,
+              -2px  2px 0 #4c1d95,
+               2px  2px 0 #4c1d95,
+               4px  4px 0 #a3e635
+            `
+          }}>
+            Tsukuba Sports Day
+          </h1>
+        </div>
+
         <p style={{ 
           fontSize: "12px", 
           backgroundColor: "#a3e635", 
           color: "#4c1d95", 
-          margin: "14px auto 0 auto", 
+          margin: "0 auto", 
           fontWeight: "950",
           padding: "5px 14px",
           borderRadius: "30px",
@@ -231,7 +260,6 @@ export default function UserPage() {
       {/* 🗺️ 会場エリアマップ */}
       <section style={{ marginBottom: "32px", backgroundColor: "white", boxShadow: "0 4px 16px rgba(0,0,0,0.02)", borderBottom: "1px solid #e8e8f3" }}>
         <div style={{ padding: "18px 16px 4px 16px", maxWidth: "550px", margin: "0 auto" }}>
-          {/* 💥 見出し袋文字化（紫見出し×白フチ×薄紫シャドウ） */}
           <h2 style={{ 
             fontSize: "18px", 
             color: "#4c1d95", 
@@ -324,7 +352,6 @@ export default function UserPage() {
                 onMouseDown={(e) => e.currentTarget.style.transform = "translate(-50%, -100%) scale(0.9)"}
                 onMouseUp={(e) => e.currentTarget.style.transform = "translate(-50%, -100%) scale(1.1)"}
               >
-                {/* 💥 ピン内の数字も白フチ・黒シャドウでコミカルに強調 */}
                 <div style={{
                   backgroundColor: pinBg,
                   padding: "5px 12px",
@@ -379,7 +406,6 @@ export default function UserPage() {
         {/* 📢 運営からのお知らせ */}
         <section style={{ marginBottom: "32px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", borderBottom: "3px solid #6b21a8", paddingBottom: "8px" }}>
-            {/* 💥 見出し袋文字化 */}
             <h2 style={{ 
               fontSize: "18px", 
               color: "#4c1d95", 
@@ -429,7 +455,6 @@ export default function UserPage() {
         {/* ⏱ 各アトラクション情報 */}
         <section style={{ marginBottom: "36px" }}>
           <div style={{ borderBottom: "3px solid #4c1d95", paddingBottom: "8px", marginBottom: "18px" }}>
-            {/* 💥 見出し袋文字化 */}
             <h2 style={{ 
               fontSize: "18px", 
               color: "#4c1d95", 
@@ -530,7 +555,7 @@ export default function UserPage() {
                     </div>
 
                     <div style={{ textAlign: "right", minWidth: "85px" }}>
-                      {/* 💥 アラビア数字をフチ付き3Dフォントに変更 */}
+                      {/* 💥 数字のポップ化 */}
                       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "flex-end" }}>
                         <span style={{ 
                           fontSize: "42px", 
@@ -794,7 +819,7 @@ export default function UserPage() {
                           paddingBottom: "6px" 
                         }}>
                           <span style={{ color: "#7c3aed", fontSize: "10px", display: "block", fontWeight: "950" }}>💬 返信 ({reply.createdAt})</span>
-                          <p style={{ margin: "4px 0 0 0", color: "#374151", lineHeight: "1.5", fontWeight: "700" }}>{reply.text}</p>
+                          <p style={{ margin: "4px 0 0 0", color: "#374151", lineHeight: "1.5", fontWeight: "500" }}>{reply.text}</p>
                         </div>
                       ))}
                     </div>
@@ -825,7 +850,7 @@ export default function UserPage() {
                       style={{ 
                         backgroundColor: "#a3e635", 
                         color: "#3f6212", 
-                        border: "2.5px solid #4d7c0f", 
+                        border: "2px.5px solid #4d7c0f", 
                         borderRadius: "10px", 
                         padding: "8px 16px", 
                         fontSize: "12px", 
@@ -845,7 +870,7 @@ export default function UserPage() {
         </section>
       </main>
 
-      {/* ➕ 新規投稿ボタン（ライムグリーンに紫ボーダーのポップデザイン） */}
+      {/* ➕ 新規投稿ボタン */}
       <Link href="/new" style={{
         position: "fixed",
         bottom: "28px",
