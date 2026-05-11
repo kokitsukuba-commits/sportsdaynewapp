@@ -191,127 +191,133 @@ export default function UserPage() {
         </p>
       </header>
 
-      {/* メイン幅 */}
-      <main style={{ maxWidth: "550px", margin: "0 auto", padding: "20px 12px 40px 12px" }}>
-        
-        {/* 🗺️ 会場エリアマップ */}
-        <section style={{ marginBottom: "28px", backgroundColor: "white", borderRadius: "16px", padding: "14px", boxShadow: "0 4px 12px rgba(0,0,0,0.03)", border: "1px solid #e2e8f0" }}>
-          <h2 style={{ fontSize: "15px", color: "#2d3748", fontWeight: "700", margin: "0 0 12px 0", borderBottom: "2px solid #cbd5e0", paddingBottom: "6px" }}>
+      {/* 🗺️ 会場エリアマップ（画面目一杯に大きく表示するセクション） */}
+      <section style={{ marginBottom: "28px", backgroundColor: "white", boxShadow: "0 4px 12px rgba(0,0,0,0.03)", borderBottom: "1px solid #e2e8f0" }}>
+        <div style={{ padding: "14px 14px 4px 14px", maxWidth: "550px", margin: "0 auto" }}>
+          <h2 style={{ fontSize: "15px", color: "#2d3748", fontWeight: "700", margin: 0 }}>
             🗺️ 会場エリアマップ（リアルタイム待ち時間）
           </h2>
-          
-          {/* 地図とピンを重ねる親コンテナ */}
-          <div style={{ 
-            position: "relative", 
-            width: "100%", 
-            borderRadius: "12px", 
-            overflow: "hidden", 
-            border: "1px solid #edf2f7",
-            backgroundColor: "#f7fafc"
-          }}>
-            {/* 会場マップ画像 */}
-            <img 
-              src="/map.jpg" 
-              alt="スポーツ・デー 会場マップ"
-              style={{ width: "100%", height: "auto", display: "block" }}
-            />
+        </div>
+        
+        {/* 地図とピンを重ねる親コンテナ：幅制限をなくし画面全幅に */}
+        <div style={{ 
+          position: "relative", 
+          width: "100%", 
+          maxWidth: "800px", // マップ表示の最大上限をアップ
+          margin: "10px auto 0 auto",
+          overflow: "hidden", 
+          backgroundColor: "#f7fafc",
+          borderTop: "1px solid #edf2f7",
+          borderBottom: "1px solid #edf2f7"
+        }}>
+          {/* 会場マップ画像 */}
+          <img 
+            src="/map.jpg" 
+            alt="スポーツ・デー 会場マップ"
+            style={{ width: "100%", height: "auto", display: "block" }}
+          />
 
-            {/* マップ上に浮かべるリアルタイム待ち時間ピン群 */}
-            {sports.map((sport) => {
-              // 混雑度によるピンカラー変更
-              let pinColor = "#38a169"; // スムーズ（緑）
-              if (sport.waitingTime > 20) {
-                pinColor = "#e53e3e"; // 混雑（赤）
-              } else if (sport.waitingTime > 0) {
-                pinColor = "#dd6b20"; // やや混雑（オレンジ）
-              }
+          {/* マップ上に浮かべるリアルタイム待ち時間ピン群 */}
+          {sports.map((sport) => {
+            // 混雑度によるピンカラー変更
+            let pinColor = "#38a169"; // スムーズ（緑）
+            if (sport.waitingTime > 20) {
+              pinColor = "#e53e3e"; // 混雑（赤）
+            } else if (sport.waitingTime > 0) {
+              pinColor = "#dd6b20"; // やや混雑（オレンジ）
+            }
 
-              // 📍 会場図に合わせた実寸座標マッピング
-              let position = { top: "50%", left: "50%" }; 
+            // 📍 会場図に合わせた実寸座標マッピング
+            let position = { top: "50%", left: "50%" }; 
 
-              const name = sport.name;
-              if (name.includes("モルック")) {
-                position = { top: "21%", left: "28%" };
-              } else if (name.includes("インディアカ")) {
-                position = { top: "21%", left: "71%" };
-              } else if (name.includes("ボッチャ")) {
-                position = { top: "53%", left: "25%" };
-              } else if (name.includes("バブルサッカー") || name.includes("バブル")) {
-                position = { top: "43%", left: "41%" };
-              } else if (name.includes("イントロドン") || name.includes("イントロ")) {
-                position = { top: "65%", left: "37%" };
-              } else if (name.includes("器用3種")) {
-                position = { top: "65%", left: "47%" };
-              } else if (name.includes("気配切り") || name.includes("気配")) {
-                position = { top: "43%", left: "61%" };
-              } else if (name.includes("ダーツ")) {
-                position = { top: "65%", left: "61%" };
-              } else if (name.includes("サバゲー")) {
-                position = { top: "53%", left: "77%" };
-              }
+            const name = sport.name;
+            if (name.includes("モルック")) {
+              position = { top: "21%", left: "28%" };
+            } else if (name.includes("インディアカ")) {
+              position = { top: "21%", left: "71%" };
+            } else if (name.includes("ボッチャ")) {
+              position = { top: "53%", left: "25%" };
+            } else if (name.includes("バブルサッカー") || name.includes("バブル")) {
+              position = { top: "43%", left: "41%" };
+            } else if (name.includes("イントロドン") || name.includes("イントロ")) {
+              position = { top: "65%", left: "37%" };
+            } else if (name.includes("器用3種")) {
+              position = { top: "65%", left: "47%" };
+            } else if (name.includes("気配切り") || name.includes("気配")) {
+              position = { top: "43%", left: "61%" };
+            } else if (name.includes("ダーツ")) {
+              position = { top: "65%", left: "61%" };
+            } else if (name.includes("サバゲー")) {
+              position = { top: "53%", left: "77%" };
+            }
 
-              return (
-                <div
-                  key={`pin-${sport.id}`}
-                  onClick={() => toggleExpand(sport.id)} // タップしたら詳細を開いてスクロール
-                  style={{
-                    position: "absolute",
-                    top: position.top,
-                    left: position.left,
-                    transform: "translate(-50%, -100%)", // ピンの底辺を基準にする
+            return (
+              <div
+                key={`pin-${sport.id}`}
+                onClick={() => toggleExpand(sport.id)} // タップしたら詳細を開いてスクロール
+                style={{
+                  position: "absolute",
+                  top: position.top,
+                  left: position.left,
+                  transform: "translate(-50%, -100%)", // ピンの底辺を基準にする
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  cursor: "pointer",
+                  filter: "drop-shadow(0px 4px 6px rgba(0,0,0,0.3))",
+                  zIndex: 10,
+                  transition: "transform 0.15s ease"
+                }}
+                onMouseDown={(e) => e.currentTarget.style.transform = "translate(-50%, -100%) scale(0.95)"}
+                onMouseUp={(e) => e.currentTarget.style.transform = "translate(-50%, -100%) scale(1)"}
+              >
+                {/* ピン型ポップアップデザイン */}
+                <div style={{
+                  backgroundColor: "white",
+                  padding: "5px 10px", // 少しピンのサイズも大きくしてタップしやすく
+                  borderRadius: "9px",
+                  border: `2px solid ${pinColor}`,
+                  textAlign: "center",
+                  boxShadow: "inset 0 1px 2px rgba(0,0,0,0.05)"
+                }}>
+                  {/* 待ち時間のみ表示 */}
+                  <div style={{ 
+                    fontSize: "14px", // フォントサイズを1pxアップして視認性向上
+                    fontWeight: "900", 
+                    color: pinColor, 
+                    lineHeight: "1",
                     display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    cursor: "pointer",
-                    filter: "drop-shadow(0px 3px 5px rgba(0,0,0,0.25))",
-                    zIndex: 10,
-                    transition: "transform 0.15s ease"
-                  }}
-                  onMouseDown={(e) => e.currentTarget.style.transform = "translate(-50%, -100%) scale(0.95)"}
-                  onMouseUp={(e) => e.currentTarget.style.transform = "translate(-50%, -100%) scale(1)"}
-                >
-                  {/* ピン型ポップアップデザイン（種目名を排して時間のみに最適化） */}
-                  <div style={{
-                    backgroundColor: "white",
-                    padding: "4px 8px",
-                    borderRadius: "8px",
-                    border: `2px solid ${pinColor}`,
-                    textAlign: "center",
-                    boxShadow: "inset 0 1px 2px rgba(0,0,0,0.05)"
+                    alignItems: "baseline",
+                    justifyContent: "center"
                   }}>
-                    {/* 待ち時間のみ表示 */}
-                    <div style={{ 
-                      fontSize: "12px", 
-                      fontWeight: "900", 
-                      color: pinColor, 
-                      lineHeight: "1",
-                      display: "flex",
-                      alignItems: "baseline",
-                      justifyContent: "center"
-                    }}>
-                      {sport.waitingTime}
-                      <span style={{ fontSize: "8px", fontWeight: "bold", marginLeft: "1px", color: "#718096" }}>分</span>
-                    </div>
+                    {sport.waitingTime}
+                    <span style={{ fontSize: "9px", fontWeight: "bold", marginLeft: "1px", color: "#718096" }}>分</span>
                   </div>
-                  {/* 三角のしっぽ */}
-                  <div style={{
-                    width: 0,
-                    height: 0,
-                    borderLeft: "5px solid transparent",
-                    borderRight: "5px solid transparent",
-                    borderTop: `5px solid ${pinColor}`,
-                    marginTop: "-1px"
-                  }}></div>
                 </div>
-              );
-            })}
-          </div>
-          
-          <p style={{ fontSize: "10px", color: "#718096", margin: "8px 0 0 0", lineHeight: "1.4" }}>
+                {/* 三角のしっぽ */}
+                <div style={{
+                  width: 0,
+                  height: 0,
+                  borderLeft: "6px solid transparent",
+                  borderRight: "6px solid transparent",
+                  borderTop: `6px solid ${pinColor}`,
+                  marginTop: "-1px"
+                }}></div>
+              </div>
+            );
+          })}
+        </div>
+        
+        <div style={{ padding: "8px 14px 14px 14px", maxWidth: "550px", margin: "0 auto" }}>
+          <p style={{ fontSize: "10px", color: "#718096", margin: 0, lineHeight: "1.4" }}>
             ※マップ上の数字ピンをタップすると、下部の該当アトラクション詳細まで直接移動し、開くことができます。
           </p>
-        </section>
+        </div>
+      </section>
 
+      {/* メイン幅（お知らせ、リスト、つぶやき用） */}
+      <main style={{ maxWidth: "550px", margin: "0 auto", padding: "0 12px 40px 12px" }}>
+        
         {/* 📢 アナウンスセクション */}
         <section style={{ marginBottom: "28px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", borderBottom: "2px solid #5a2575", paddingBottom: "6px" }}>
