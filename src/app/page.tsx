@@ -191,16 +191,16 @@ export default function UserPage() {
         </p>
       </header>
 
-      {/* メイン幅を地図が映えるように500pxから少し広めの550pxに変更 */}
+      {/* メイン幅 */}
       <main style={{ maxWidth: "550px", margin: "0 auto", padding: "20px 12px 40px 12px" }}>
         
-        {/* 🗺️ 会場エリアマップ（リアルタイム待ち時間ピン・拡大版） */}
+        {/* 🗺️ 会場エリアマップ */}
         <section style={{ marginBottom: "28px", backgroundColor: "white", borderRadius: "16px", padding: "14px", boxShadow: "0 4px 12px rgba(0,0,0,0.03)", border: "1px solid #e2e8f0" }}>
           <h2 style={{ fontSize: "15px", color: "#2d3748", fontWeight: "700", margin: "0 0 12px 0", borderBottom: "2px solid #cbd5e0", paddingBottom: "6px" }}>
             🗺️ 会場エリアマップ（リアルタイム待ち時間）
           </h2>
           
-          {/* 地図とピンを重ねる親コンテナ（幅いっぱい表示） */}
+          {/* 地図とピンを重ねる親コンテナ */}
           <div style={{ 
             position: "relative", 
             width: "100%", 
@@ -226,7 +226,7 @@ export default function UserPage() {
                 pinColor = "#dd6b20"; // やや混雑（オレンジ）
               }
 
-              // 📍 会場図（map.jpg）に完璧に合わせた実寸座標マッピング
+              // 📍 会場図に合わせた実寸座標マッピング
               let position = { top: "50%", left: "50%" }; 
 
               const name = sport.name;
@@ -270,38 +270,27 @@ export default function UserPage() {
                   onMouseDown={(e) => e.currentTarget.style.transform = "translate(-50%, -100%) scale(0.95)"}
                   onMouseUp={(e) => e.currentTarget.style.transform = "translate(-50%, -100%) scale(1)"}
                 >
-                  {/* ピン型ポップアップデザイン */}
+                  {/* ピン型ポップアップデザイン（種目名を排して時間のみに最適化） */}
                   <div style={{
                     backgroundColor: "white",
-                    padding: "3px 6px",
-                    borderRadius: "6px",
+                    padding: "4px 8px",
+                    borderRadius: "8px",
                     border: `2px solid ${pinColor}`,
                     textAlign: "center",
                     boxShadow: "inset 0 1px 2px rgba(0,0,0,0.05)"
                   }}>
-                    {/* 種目名 */}
+                    {/* 待ち時間のみ表示 */}
                     <div style={{ 
-                      fontSize: "7px", 
-                      color: "#4a5568", 
-                      fontWeight: "800", 
-                      lineHeight: "1.1",
-                      maxWidth: "65px",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap"
-                    }}>
-                      {sport.name}
-                    </div>
-                    {/* 待ち時間 */}
-                    <div style={{ 
-                      fontSize: "11px", 
+                      fontSize: "12px", 
                       fontWeight: "900", 
                       color: pinColor, 
-                      marginTop: "1px",
-                      lineHeight: "1"
+                      lineHeight: "1",
+                      display: "flex",
+                      alignItems: "baseline",
+                      justifyContent: "center"
                     }}>
                       {sport.waitingTime}
-                      <span style={{ fontSize: "7px", fontWeight: "bold", marginLeft: "1px", color: "#718096" }}>分</span>
+                      <span style={{ fontSize: "8px", fontWeight: "bold", marginLeft: "1px", color: "#718096" }}>分</span>
                     </div>
                   </div>
                   {/* 三角のしっぽ */}
@@ -464,7 +453,7 @@ export default function UserPage() {
                                   {formatTime(rev.createdAt)}
                                 </span>
 
-                                {/* 👍 LINE風リアクションエリア */}
+                                {/* 👍 リアクションエリア */}
                                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "10px" }}>
                                   {REACTION_EMOJIS.map((item) => {
                                     const count = rev.reactions?.[item.key] || 0;
@@ -495,7 +484,7 @@ export default function UserPage() {
                                   })}
                                 </div>
 
-                                {/* 💬 返信一覧（文字色を濃いグレー #2d3748 にして視認性アップ） */}
+                                {/* 💬 返信一覧 */}
                                 {rev.replies && rev.replies.length > 0 && (
                                   <div style={{ backgroundColor: "#f3f4f6", padding: "8px 10px", borderRadius: "8px", display: "flex", flexDirection: "column", gap: "6px", marginTop: "6px", border: "1px solid #e5e7eb" }}>
                                     {rev.replies.map((reply, idx) => (
@@ -551,7 +540,7 @@ export default function UserPage() {
                   <p style={{ fontSize: "13px", color: "#2d3748", margin: "0 0 4px 0", lineHeight: "1.4", fontWeight: "500" }}>{rev.text}</p>
                   <span style={{ fontSize: "9px", color: "#a0aec0", display: "block", marginBottom: "8px" }}>{formatTime(rev.createdAt)}</span>
 
-                  {/* 👍 LINE風リアクションエリア */}
+                  {/* 👍 リアクションエリア */}
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "10px" }}>
                     {REACTION_EMOJIS.map((item) => {
                       const count = rev.reactions?.[item.key] || 0;
