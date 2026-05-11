@@ -157,12 +157,15 @@ export default function UserPage() {
     }, 150);
   };
 
+  // 全体で使うフォント指定（丸ゴシック優先、太め）
+  const fontStyle = "'Hiragino Maru Gothic ProN', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif";
+
   if (loading) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", fontFamily: "sans-serif", backgroundColor: "#f5f3ff" }}>
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", fontFamily: fontStyle, backgroundColor: "#f5f3ff" }}>
         <div style={{ textAlign: "center" }}>
           <div style={{ border: "4px solid #e9d8fd", borderTop: "4px solid #7c3aed", borderRadius: "50%", width: "45px", height: "45px", animation: "spin 1s linear infinite", margin: "0 auto 15px auto" }}></div>
-          <p style={{ fontWeight: "800", color: "#6b21a8", fontSize: "14px" }}>ワクワクを読み込み中...</p>
+          <p style={{ fontWeight: "950", color: "#6b21a8", fontSize: "16px" }}>ワクワクを読み込み中...</p>
         </div>
         <style jsx global>{`
           @keyframes spin {
@@ -175,36 +178,51 @@ export default function UserPage() {
   }
 
   return (
-    <div style={{ backgroundColor: "#fbfbfe", minHeight: "100vh", fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif", position: "relative", paddingBottom: "110px", color: "#2d3748" }}>
+    <div style={{ backgroundColor: "#fbfbfe", minHeight: "100vh", fontFamily: fontStyle, position: "relative", paddingBottom: "110px", color: "#2d3748" }}>
       
-      {/* 🔮 ヘッダー（グラデーション×ポップ） */}
+      {/* 🔮 ヘッダー（グラデーション×ポップ袋文字） */}
       <header style={{ 
         background: "linear-gradient(135deg, #6b21a8 0%, #4c1d95 100%)", 
         color: "white", 
-        padding: "32px 16px 28px 16px", 
+        padding: "36px 16px 32px 16px", 
         textAlign: "center", 
         boxShadow: "0 6px 20px rgba(76, 29, 149, 0.15)", 
         borderRadius: "0 0 28px 28px",
         position: "relative",
         overflow: "hidden"
       }}>
-        {/* 背景のポップな丸飾り */}
+        {/* 背景の丸飾り */}
         <div style={{ position: "absolute", top: "-20px", left: "-20px", width: "80px", height: "80px", borderRadius: "50%", background: "rgba(163, 230, 53, 0.15)" }}></div>
         <div style={{ position: "absolute", bottom: "-30px", right: "-10px", width: "100px", height: "100px", borderRadius: "50%", background: "rgba(163, 230, 53, 0.1)" }}></div>
 
-        <h1 style={{ fontSize: "24px", fontWeight: "900", margin: 0, letterSpacing: "1.5px", textShadow: "0 2px 4px rgba(0,0,0,0.2)" }}>
+        {/* 💥 ポップ袋文字タイトル（白文字×紫フチ×ライムグリーン影） */}
+        <h1 style={{ 
+          fontSize: "28px", 
+          fontWeight: "950", 
+          margin: 0, 
+          letterSpacing: "2px", 
+          color: "#ffffff",
+          textShadow: `
+            -2px -2px 0 #4c1d95,  
+             2px -2px 0 #4c1d95,
+            -2px  2px 0 #4c1d95,
+             2px  2px 0 #4c1d95,
+             4px  4px 0 #a3e635
+          `
+        }}>
           🏆 Tsukuba Sports Day
         </h1>
         <p style={{ 
           fontSize: "12px", 
           backgroundColor: "#a3e635", 
           color: "#4c1d95", 
-          margin: "10px auto 0 auto", 
-          fontWeight: "800",
-          padding: "4px 12px",
+          margin: "14px auto 0 auto", 
+          fontWeight: "950",
+          padding: "5px 14px",
           borderRadius: "30px",
           display: "inline-block",
-          boxShadow: "0 2px 8px rgba(163,230,83,0.3)"
+          boxShadow: "0 3px 0px #4d7c0f",
+          border: "2px solid #4c1d95"
         }}>
           ⚡️ リアルタイム待ち時間 ＆ 会場ガイド
         </p>
@@ -213,7 +231,23 @@ export default function UserPage() {
       {/* 🗺️ 会場エリアマップ */}
       <section style={{ marginBottom: "32px", backgroundColor: "white", boxShadow: "0 4px 16px rgba(0,0,0,0.02)", borderBottom: "1px solid #e8e8f3" }}>
         <div style={{ padding: "18px 16px 4px 16px", maxWidth: "550px", margin: "0 auto" }}>
-          <h2 style={{ fontSize: "16px", color: "#4c1d95", fontWeight: "900", margin: 0, display: "flex", alignItems: "center", gap: "6px" }}>
+          {/* 💥 見出し袋文字化（紫見出し×白フチ×薄紫シャドウ） */}
+          <h2 style={{ 
+            fontSize: "18px", 
+            color: "#4c1d95", 
+            fontWeight: "950", 
+            margin: 0, 
+            display: "flex", 
+            alignItems: "center", 
+            gap: "6px",
+            textShadow: `
+              -1.5px -1.5px 0 #ffffff,  
+               1.5px -1.5px 0 #ffffff,
+              -1.5px  1.5px 0 #ffffff,
+               1.5px  1.5px 0 #ffffff,
+               2px  2px 0px rgba(76, 29, 149, 0.2)
+            `
+          }}>
             <span style={{ fontSize: "20px" }}>🗺️</span> 会場エリアマップ
           </h2>
         </div>
@@ -236,16 +270,15 @@ export default function UserPage() {
 
           {/* マップ上の数字ピン */}
           {sports.map((sport) => {
-            // 緑（スムーズ）と赤（混雑）のカラーコード（ポップに調整）
-            let pinBg = "#84cc16"; // ライムグリーン
+            let pinBg = "#84cc16"; 
             let pinTextColor = "#ffffff";
             let pinBorder = "#4d7c0f";
 
             if (sport.waitingTime > 20) {
-              pinBg = "#ef4444"; // ビビッドレッド
+              pinBg = "#ef4444"; 
               pinBorder = "#991b1b";
             } else if (sport.waitingTime > 0) {
-              pinBg = "#f97316"; // ポップオレンジ
+              pinBg = "#f97316"; 
               pinBorder = "#c2410c";
             }
 
@@ -291,26 +324,32 @@ export default function UserPage() {
                 onMouseDown={(e) => e.currentTarget.style.transform = "translate(-50%, -100%) scale(0.9)"}
                 onMouseUp={(e) => e.currentTarget.style.transform = "translate(-50%, -100%) scale(1.1)"}
               >
-                {/* 丸っこくしてアメコミ風の少し太めの枠線にしたピン */}
+                {/* 💥 ピン内の数字も白フチ・黒シャドウでコミカルに強調 */}
                 <div style={{
                   backgroundColor: pinBg,
-                  padding: "5px 11px",
-                  borderRadius: "12px",
-                  border: `2px solid ${pinBorder}`,
+                  padding: "5px 12px",
+                  borderRadius: "14px",
+                  border: `2px.5px solid ${pinBorder}`,
                   textAlign: "center",
                   boxShadow: "inset 0 2px 4px rgba(255,255,255,0.3)"
                 }}>
                   <div style={{ 
-                    fontSize: "15px", 
-                    fontWeight: "900", 
+                    fontSize: "16px", 
+                    fontWeight: "950", 
                     color: pinTextColor, 
                     lineHeight: "1.1",
                     display: "flex",
                     alignItems: "baseline",
-                    justifyContent: "center"
+                    justifyContent: "center",
+                    textShadow: `
+                      -1px -1px 0 ${pinBorder},  
+                       1px -1px 0 ${pinBorder},
+                      -1px  1px 0 ${pinBorder},
+                       1px  1px 0 ${pinBorder}
+                    `
                   }}>
                     {sport.waitingTime}
-                    <span style={{ fontSize: "10px", marginLeft: "1.5px", opacity: 0.9 }}>分</span>
+                    <span style={{ fontSize: "10px", marginLeft: "1.5px" }}>分</span>
                   </div>
                 </div>
                 {/* ピンのしっぽ */}
@@ -328,7 +367,7 @@ export default function UserPage() {
         </div>
         
         <div style={{ padding: "10px 16px 16px 16px", maxWidth: "550px", margin: "0 auto" }}>
-          <p style={{ fontSize: "11px", color: "#6b7280", margin: 0, lineHeight: "1.5", fontWeight: "500" }}>
+          <p style={{ fontSize: "11px", color: "#6b7280", margin: 0, lineHeight: "1.5", fontWeight: "700" }}>
             💡 <strong style={{ color: "#6b21a8" }}>ピンをタップ</strong>すると、下部のアトラクション詳細カードへスクロールして自動で開きます！
           </p>
         </div>
@@ -340,15 +379,28 @@ export default function UserPage() {
         {/* 📢 運営からのお知らせ */}
         <section style={{ marginBottom: "32px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", borderBottom: "3px solid #6b21a8", paddingBottom: "8px" }}>
-            <h2 style={{ fontSize: "16px", color: "#4c1d95", fontWeight: "900", margin: 0 }}>
+            {/* 💥 見出し袋文字化 */}
+            <h2 style={{ 
+              fontSize: "18px", 
+              color: "#4c1d95", 
+              fontWeight: "950", 
+              margin: 0,
+              textShadow: `
+                -1.5px -1.5px 0 #ffffff,  
+                 1.5px -1.5px 0 #ffffff,
+                -1.5px  1.5px 0 #ffffff,
+                 1.5px  1.5px 0 #ffffff,
+                 2px  2px 0px rgba(76, 29, 149, 0.2)
+              `
+            }}>
               📢 運営からのお知らせ
             </h2>
-            <span style={{ fontSize: "11px", backgroundColor: "#a3e635", color: "#3f6212", padding: "3px 10px", borderRadius: "12px", fontWeight: "900" }}>LIVE</span>
+            <span style={{ fontSize: "11px", backgroundColor: "#a3e635", color: "#3f6212", padding: "4px 10px", borderRadius: "12px", fontWeight: "950", border: "1.5px solid #3f6212" }}>LIVE</span>
           </div>
           
           {announcements.length === 0 ? (
-            <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "24px", textAlign: "center", border: "2px solid #e9d8fd" }}>
-              <p style={{ color: "#a0aec0", fontSize: "13px", margin: 0, fontWeight: "500" }}>現在、新しいお知らせはありません。</p>
+            <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "24px", textAlign: "center", border: "2.5px solid #e9d8fd" }}>
+              <p style={{ color: "#a0aec0", fontSize: "13px", margin: 0, fontWeight: "700" }}>現在、新しいお知らせはありません。</p>
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -358,14 +410,14 @@ export default function UserPage() {
                   borderRadius: "16px", 
                   padding: "16px 18px", 
                   boxShadow: "0 6px 0px rgba(107, 33, 168, 0.1)", 
-                  border: "2px solid #e9d8fd",
+                  border: "2.5px solid #e9d8fd",
                   borderLeft: "6px solid #6b21a8"
                 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "6px" }}>
-                    <h3 style={{ fontSize: "14px", fontWeight: "900", color: "#1a202c", margin: 0 }}>{ann.title}</h3>
-                    <span style={{ fontSize: "10px", color: "#7c3aed", fontWeight: "bold" }}>{formatTime(ann.createdAt)}</span>
+                    <h3 style={{ fontSize: "14px", fontWeight: "950", color: "#1a202c", margin: 0 }}>{ann.title}</h3>
+                    <span style={{ fontSize: "10px", color: "#7c3aed", fontWeight: "950" }}>{formatTime(ann.createdAt)}</span>
                   </div>
-                  <p style={{ fontSize: "12px", color: "#4b5563", margin: 0, lineHeight: "1.6", whiteSpace: "pre-wrap", fontWeight: "500" }}>
+                  <p style={{ fontSize: "12px", color: "#4b5563", margin: 0, lineHeight: "1.6", whiteSpace: "pre-wrap", fontWeight: "700" }}>
                     {ann.content}
                   </p>
                 </div>
@@ -377,7 +429,20 @@ export default function UserPage() {
         {/* ⏱ 各アトラクション情報 */}
         <section style={{ marginBottom: "36px" }}>
           <div style={{ borderBottom: "3px solid #4c1d95", paddingBottom: "8px", marginBottom: "18px" }}>
-            <h2 style={{ fontSize: "16px", color: "#4c1d95", fontWeight: "900", margin: 0 }}>
+            {/* 💥 見出し袋文字化 */}
+            <h2 style={{ 
+              fontSize: "18px", 
+              color: "#4c1d95", 
+              fontWeight: "950", 
+              margin: 0,
+              textShadow: `
+                -1.5px -1.5px 0 #ffffff,  
+                 1.5px -1.5px 0 #ffffff,
+                -1.5px  1.5px 0 #ffffff,
+                 1.5px  1.5px 0 #ffffff,
+                 2px  2px 0px rgba(76, 29, 149, 0.2)
+              `
+            }}>
               ⏱ 各アトラクション情報
             </h2>
           </div>
@@ -416,7 +481,7 @@ export default function UserPage() {
                     borderRadius: "20px",
                     overflow: "hidden",
                     boxShadow: isExpanded ? "0 8px 0px rgba(107, 33, 168, 0.15)" : "0 4px 0px rgba(226, 232, 240, 0.8)",
-                    border: isExpanded ? "3px solid #6b21a8" : "2px solid #e2e8f0",
+                    border: isExpanded ? "3px solid #6b21a8" : "2.5px solid #e2e8f0",
                     padding: "16px 18px",
                     transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.1)"
                   }}
@@ -433,20 +498,21 @@ export default function UserPage() {
                   >
                     <div style={{ flex: 1, paddingRight: "10px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                        <h3 style={{ fontSize: "17px", fontWeight: "900", color: "#1e1b4b", margin: 0 }}>{sport.name}</h3>
+                        <h3 style={{ fontSize: "17px", fontWeight: "950", color: "#1e1b4b", margin: 0 }}>{sport.name}</h3>
                         <span style={{ 
                           fontSize: "10px", 
                           backgroundColor: "#f3e8ff", 
                           color: "#6b21a8", 
-                          padding: "2px 8px", 
+                          padding: "3px 8px", 
                           borderRadius: "8px", 
-                          fontWeight: "800" 
+                          fontWeight: "950",
+                          border: "1.5px solid #6b21a8"
                         }}>
-                          {isExpanded ? "▲ 閉じる" : "▼ 詳細・つぶやき"}
+                          {isExpanded ? "▲ 閉じる" : "▼ つぶやき見る"}
                         </span>
                       </div>
                       <div style={{ display: "flex", gap: "8px", alignItems: "center", marginTop: "10px" }}>
-                        <span style={{ fontSize: "11px", backgroundColor: "#f3f4f6", border: "1.5px solid #e5e7eb", padding: "4px 10px", borderRadius: "12px", color: "#374151", fontWeight: "700" }}>
+                        <span style={{ fontSize: "11px", backgroundColor: "#f3f4f6", border: "1.5px solid #e5e7eb", padding: "4px 10px", borderRadius: "12px", color: "#374151", fontWeight: "800" }}>
                           📍 {sport.location}
                         </span>
                         <span style={{ 
@@ -456,21 +522,34 @@ export default function UserPage() {
                           color: statusColor, 
                           padding: "4px 10px", 
                           borderRadius: "12px", 
-                          fontWeight: "900" 
+                          fontWeight: "950" 
                         }}>
                           {statusText}
                         </span>
                       </div>
                     </div>
 
-                    <div style={{ textAlign: "right", minWidth: "75px" }}>
+                    <div style={{ textAlign: "right", minWidth: "85px" }}>
+                      {/* 💥 アラビア数字をフチ付き3Dフォントに変更 */}
                       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "flex-end" }}>
-                        <span style={{ fontSize: "36px", fontWeight: "900", color: statusColor, lineHeight: "1" }}>
+                        <span style={{ 
+                          fontSize: "42px", 
+                          fontWeight: "950", 
+                          color: statusColor, 
+                          lineHeight: "1",
+                          textShadow: `
+                            -1.5px -1.5px 0 #ffffff,  
+                             1.5px -1.5px 0 #ffffff,
+                            -1.5px  1.5px 0 #ffffff,
+                             1.5px  1.5px 0 #ffffff,
+                             3px    3px 0px rgba(0,0,0,0.12)
+                          `
+                        }}>
                           {sport.waitingTime}
                         </span>
-                        <span style={{ fontSize: "12px", marginLeft: "2px", color: "#4b5563", fontWeight: "900" }}>分</span>
+                        <span style={{ fontSize: "12px", marginLeft: "2px", color: "#4b5563", fontWeight: "950" }}>分</span>
                       </div>
-                      <span style={{ fontSize: "9px", color: "#9ca3af", display: "block", marginTop: "6px", fontWeight: "700" }}>
+                      <span style={{ fontSize: "9px", color: "#9ca3af", display: "block", marginTop: "6px", fontWeight: "800" }}>
                         更新: {formatTime(sport.updatedAt)}
                       </span>
                     </div>
@@ -486,20 +565,20 @@ export default function UserPage() {
                           fontSize: "13px", 
                           color: "#4b5563", 
                           lineHeight: "1.6",
-                          fontWeight: "500"
+                          fontWeight: "700"
                         }}>
                           <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{sport.description}</p>
                         </div>
                       )}
 
                       <div style={{ marginTop: "16px", paddingTop: "16px", borderTop: "2px solid #f3f4f6" }}>
-                        <span style={{ fontSize: "12px", fontWeight: "900", color: "#6b21a8", display: "block", marginBottom: "10px" }}>
+                        <span style={{ fontSize: "12px", fontWeight: "950", color: "#6b21a8", display: "block", marginBottom: "10px" }}>
                           💬 この種目のリアルつぶやき ({filteredReviews.length}件)
                         </span>
                         
                         {filteredReviews.length === 0 ? (
-                          <p style={{ color: "#9ca3af", fontSize: "12px", margin: "4px 0 0 0", fontStyle: "italic", fontWeight: "500" }}>
-                            現在、この種目に関するつぶやきはありません。右下の＋ボタンから最初の声を投稿してみてね！
+                          <p style={{ color: "#9ca3af", fontSize: "12px", margin: "4px 0 0 0", fontStyle: "italic", fontWeight: "700" }}>
+                            現在、この種目に関するつぶやきはありません。最初の声を届けてね！
                           </p>
                         ) : (
                           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -510,14 +589,14 @@ export default function UserPage() {
                                 borderRadius: "14px", 
                                 border: "2px solid #f3e8ff" 
                               }}>
-                                <p style={{ fontSize: "13px", color: "#1e1b4b", margin: "0 0 6px 0", lineHeight: "1.5", fontWeight: "600" }}>
+                                <p style={{ fontSize: "13px", color: "#1e1b4b", margin: "0 0 6px 0", lineHeight: "1.5", fontWeight: "700" }}>
                                   {rev.text}
                                 </p>
-                                <span style={{ fontSize: "10px", color: "#9ca3af", display: "block", marginBottom: "10px", fontWeight: "600" }}>
+                                <span style={{ fontSize: "10px", color: "#9ca3af", display: "block", marginBottom: "10px", fontWeight: "700" }}>
                                   {formatTime(rev.createdAt)}
                                 </span>
 
-                                {/* 👍 リアクションボタン */}
+                                {/* 👍 リアクション */}
                                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "12px" }}>
                                   {REACTION_EMOJIS.map((item) => {
                                     const count = rev.reactions?.[item.key] || 0;
@@ -530,7 +609,7 @@ export default function UserPage() {
                                           alignItems: "center",
                                           gap: "4px",
                                           backgroundColor: count > 0 ? "#f3e8ff" : "white",
-                                          border: count > 0 ? "2px solid #c084fc" : "2px solid #e5e7eb",
+                                          border: count > 0 ? "2.5px solid #c084fc" : "2.5px solid #e5e7eb",
                                           borderRadius: "14px",
                                           padding: "4px 10px",
                                           fontSize: "12px",
@@ -541,7 +620,7 @@ export default function UserPage() {
                                         onMouseUp={(e) => e.currentTarget.style.transform = "scale(1)"}
                                       >
                                         <span>{item.emoji}</span>
-                                        <span style={{ fontWeight: "900", color: count > 0 ? "#6b21a8" : "#9ca3af" }}>{count}</span>
+                                        <span style={{ fontWeight: "950", color: count > 0 ? "#6b21a8" : "#9ca3af" }}>{count}</span>
                                       </button>
                                     );
                                   })}
@@ -565,10 +644,10 @@ export default function UserPage() {
                                         borderBottom: idx !== rev.replies!.length - 1 ? "1.5px solid #f3e8ff" : "none", 
                                         paddingBottom: "6px" 
                                       }}>
-                                        <span style={{ color: "#7c3aed", fontSize: "10px", display: "block", fontWeight: "800" }}>
-                                          💬 運営・参加者からの返信 ({reply.createdAt})
+                                        <span style={{ color: "#7c3aed", fontSize: "10px", display: "block", fontWeight: "950" }}>
+                                          💬 返信 ({reply.createdAt})
                                         </span>
-                                        <p style={{ margin: "4px 0 0 0", color: "#374151", lineHeight: "1.5", fontWeight: "500" }}>{reply.text}</p>
+                                        <p style={{ margin: "4px 0 0 0", color: "#374151", lineHeight: "1.5", fontWeight: "700" }}>{reply.text}</p>
                                       </div>
                                     ))}
                                   </div>
@@ -585,13 +664,13 @@ export default function UserPage() {
                                       flex: 1, 
                                       padding: "8px 12px", 
                                       borderRadius: "10px", 
-                                      border: "2px solid #e5e7eb", 
+                                      border: "2.5px solid #e5e7eb", 
                                       fontSize: "12px", 
                                       outline: "none", 
                                       boxSizing: "border-box", 
                                       color: "#1f2937", 
                                       backgroundColor: "white",
-                                      fontWeight: "500"
+                                      fontWeight: "700"
                                     }}
                                   />
                                   <button
@@ -599,13 +678,13 @@ export default function UserPage() {
                                     style={{ 
                                       backgroundColor: "#a3e635", 
                                       color: "#3f6212", 
-                                      border: "2px solid #4d7c0f", 
+                                      border: "2px.5px solid #4d7c0f", 
                                       borderRadius: "10px", 
                                       padding: "8px 16px", 
                                       fontSize: "12px", 
-                                      fontWeight: "900", 
+                                      fontWeight: "950", 
                                       cursor: "pointer",
-                                      boxShadow: "0 2px 0px #4d7c0f"
+                                      boxShadow: "0 2.5px 0px #4d7c0f"
                                     }}
                                     onMouseDown={(e) => e.currentTarget.style.transform = "translateY(2px)"}
                                     onMouseUp={(e) => e.currentTarget.style.transform = "translateY(0px)"}
@@ -635,11 +714,27 @@ export default function UserPage() {
           boxShadow: "0 6px 0px rgba(107, 33, 168, 0.08)", 
           border: "3px solid #6b21a8" 
         }}>
-          <h2 style={{ fontSize: "16px", color: "#6b21a8", fontWeight: "900", margin: "0 0 16px 0", display: "flex", alignItems: "center", gap: "6px" }}>
+          {/* 💥 見出し袋文字化 */}
+          <h2 style={{ 
+            fontSize: "18px", 
+            color: "#6b21a8", 
+            fontWeight: "950", 
+            margin: "0 0 16px 0", 
+            display: "flex", 
+            alignItems: "center", 
+            gap: "6px",
+            textShadow: `
+              -1.5px -1.5px 0 #ffffff,  
+               1.5px -1.5px 0 #ffffff,
+              -1.5px  1.5px 0 #ffffff,
+               1.5px  1.5px 0 #ffffff,
+               2px  2px 0px rgba(107, 33, 168, 0.15)
+            `
+          }}>
             <span>💬</span> みんなの最新のつぶやき
           </h2>
           {reviews.length === 0 ? (
-            <p style={{ color: "#9ca3af", fontSize: "12px", margin: 0, fontWeight: "500" }}>まだ投稿はありません。最初の声を届けよう！</p>
+            <p style={{ color: "#9ca3af", fontSize: "12px", margin: 0, fontWeight: "700" }}>まだ投稿はありません。最初の声を届けよう！</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {reviews.slice(0, 5).map((rev) => ( 
@@ -647,10 +742,10 @@ export default function UserPage() {
                   backgroundColor: "#fbfbfe", 
                   borderRadius: "14px", 
                   padding: "14px", 
-                  border: "2px solid #e5e7eb" 
+                  border: "2.5px solid #e5e7eb" 
                 }}>
-                  <p style={{ fontSize: "13px", color: "#1e1b4b", margin: "0 0 6px 0", lineHeight: "1.5", fontWeight: "600" }}>{rev.text}</p>
-                  <span style={{ fontSize: "10px", color: "#9ca3af", display: "block", marginBottom: "10px", fontWeight: "600" }}>{formatTime(rev.createdAt)}</span>
+                  <p style={{ fontSize: "13px", color: "#1e1b4b", margin: "0 0 6px 0", lineHeight: "1.5", fontWeight: "700" }}>{rev.text}</p>
+                  <span style={{ fontSize: "10px", color: "#9ca3af", display: "block", marginBottom: "10px", fontWeight: "700" }}>{formatTime(rev.createdAt)}</span>
 
                   {/* 👍 リアクションエリア */}
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "12px" }}>
@@ -665,7 +760,7 @@ export default function UserPage() {
                             alignItems: "center",
                             gap: "4px",
                             backgroundColor: count > 0 ? "#f3e8ff" : "white",
-                            border: count > 0 ? "2px solid #c084fc" : "2px solid #e5e7eb",
+                            border: count > 0 ? "2.5px solid #c084fc" : "2.5px solid #e5e7eb",
                             borderRadius: "14px",
                             padding: "4px 10px",
                             fontSize: "12px",
@@ -674,7 +769,7 @@ export default function UserPage() {
                           }}
                         >
                           <span>{item.emoji}</span>
-                          <span style={{ fontWeight: "900", color: count > 0 ? "#6b21a8" : "#9ca3af" }}>{count}</span>
+                          <span style={{ fontWeight: "950", color: count > 0 ? "#6b21a8" : "#9ca3af" }}>{count}</span>
                         </button>
                       );
                     })}
@@ -698,8 +793,8 @@ export default function UserPage() {
                           borderBottom: idx !== rev.replies!.length - 1 ? "1.5px solid #f3e8ff" : "none", 
                           paddingBottom: "6px" 
                         }}>
-                          <span style={{ color: "#7c3aed", fontSize: "10px", display: "block", fontWeight: "800" }}>💬 返信 ({reply.createdAt})</span>
-                          <p style={{ margin: "4px 0 0 0", color: "#374151", lineHeight: "1.5", fontWeight: "500" }}>{reply.text}</p>
+                          <span style={{ color: "#7c3aed", fontSize: "10px", display: "block", fontWeight: "950" }}>💬 返信 ({reply.createdAt})</span>
+                          <p style={{ margin: "4px 0 0 0", color: "#374151", lineHeight: "1.5", fontWeight: "700" }}>{reply.text}</p>
                         </div>
                       ))}
                     </div>
@@ -716,13 +811,13 @@ export default function UserPage() {
                         flex: 1, 
                         padding: "8px 12px", 
                         borderRadius: "10px", 
-                        border: "2px solid #e5e7eb", 
+                        border: "2.5px solid #e5e7eb", 
                         fontSize: "12px", 
                         outline: "none", 
                         boxSizing: "border-box", 
                         color: "#1f2937", 
                         backgroundColor: "white",
-                        fontWeight: "500"
+                        fontWeight: "700"
                       }}
                     />
                     <button
@@ -730,13 +825,13 @@ export default function UserPage() {
                       style={{ 
                         backgroundColor: "#a3e635", 
                         color: "#3f6212", 
-                        border: "2px solid #4d7c0f", 
+                        border: "2.5px solid #4d7c0f", 
                         borderRadius: "10px", 
                         padding: "8px 16px", 
                         fontSize: "12px", 
-                        fontWeight: "900", 
+                        fontWeight: "950", 
                         cursor: "pointer",
-                        boxShadow: "0 2px 0px #4d7c0f"
+                        boxShadow: "0 2.5px 0px #4d7c0f"
                       }}
                     >
                       送信
@@ -759,7 +854,7 @@ export default function UserPage() {
         color: "#4c1d95",
         width: "60px",
         height: "60px",
-        borderRadius: "20px", // 少し丸っこい四角形に
+        borderRadius: "20px", 
         border: "3px solid #4c1d95",
         display: "flex",
         alignItems: "center",
@@ -769,10 +864,9 @@ export default function UserPage() {
         cursor: "pointer",
         textDecoration: "none",
         zIndex: 100,
-        fontWeight: "900",
+        fontWeight: "950",
         transition: "transform 0.1s, box-shadow 0.1s"
       }}
-      // タップした時に少し沈むポップなアニメーション
       onMouseDown={(e) => {
         e.currentTarget.style.transform = "translateY(4px)";
         e.currentTarget.style.boxShadow = "0 2px 0px #4c1d95";
