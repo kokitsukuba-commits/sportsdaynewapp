@@ -34,7 +34,7 @@ interface Reply {
   createdAt: string; 
 }
 
-// 💬 リアクション用の型定義（各絵文字のカウント数）
+// 💬 リアクション用の型定義
 interface Reactions {
   like?: number;    // 👍
   love?: number;    // ❤️
@@ -48,7 +48,7 @@ interface Review {
   text: string;
   createdAt: any;
   replies?: Reply[];
-  reactions?: Reactions; // 👈 リアクションプロパティを追加
+  reactions?: Reactions; 
 }
 
 // 利用可能なリアクション一覧
@@ -110,7 +110,7 @@ export default function UserPage() {
     };
   }, []);
 
-  // 💬 返信の送信処理
+  // 返信送信処理
   const handlePostReply = async (reviewId: string) => {
     const replyText = replyInputs[reviewId];
     if (!replyText || !replyText.trim()) return;
@@ -133,19 +133,16 @@ export default function UserPage() {
     }
   };
 
-  // 👍 リアクションの追加処理
+  // リアクション追加処理
   const handleAddReaction = async (reviewId: string, reactionKey: keyof Reactions) => {
     try {
       const reviewRef = doc(db, "reviews", reviewId);
-      
-      // 対象のつぶやきを取得
       const review = reviews.find(r => r.id === reviewId);
       if (!review) return;
 
       const currentReactions = review.reactions || {};
       const currentCount = currentReactions[reactionKey] || 0;
 
-      // リアクションのカウントを+1する
       await updateDoc(reviewRef, {
         [`reactions.${reactionKey}`]: currentCount + 1
       });
@@ -156,6 +153,13 @@ export default function UserPage() {
 
   const toggleExpand = (id: string) => {
     setExpandedSportId(expandedSportId === id ? null : id);
+    // マップ上のピンをタップした際に、該当のアコーディオン位置まで画面をスクロールさせる
+    setTimeout(() => {
+      const element = document.getElementById(`sport-card-${id}`);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 150);
   };
 
   if (loading) {
@@ -187,22 +191,135 @@ export default function UserPage() {
         </p>
       </header>
 
-      <main style={{ maxWidth: "500px", margin: "0 auto", padding: "20px 16px 40px 16px" }}>
+      {/* メイン幅を地図が映えるように500pxから少し広めの550pxに変更 */}
+      <main style={{ maxWidth: "550px", margin: "0 auto", padding: "20px 12px 40px 12px" }}>
         
-        {/* 会場マップセクション */}
-        <section style={{ marginBottom: "28px", backgroundColor: "white", borderRadius: "16px", padding: "16px", boxShadow: "0 4px 12px rgba(0,0,0,0.03)", border: "1px solid #e2e8f0" }}>
+        {/* 🗺️ 会場エリアマップ（リアルタイム待ち時間ピン・拡大版） */}
+        <section style={{ marginBottom: "28px", backgroundColor: "white", borderRadius: "16px", padding: "14px", boxShadow: "0 4px 12px rgba(0,0,0,0.03)", border: "1px solid #e2e8f0" }}>
           <h2 style={{ fontSize: "15px", color: "#2d3748", fontWeight: "700", margin: "0 0 12px 0", borderBottom: "2px solid #cbd5e0", paddingBottom: "6px" }}>
-            🗺️ 会場エリアマップ
+            🗺️ 会場エリアマップ（リアルタイム待ち時間）
           </h2>
-          <div style={{ width: "100%", borderRadius: "12px", overflow: "hidden", border: "1px solid #edf2f7" }}>
+          
+          {/* 地図とピンを重ねる親コンテナ（幅いっぱい表示） */}
+          <div style={{ 
+            position: "relative", 
+            width: "100%", 
+            borderRadius: "12px", 
+            overflow: "hidden", 
+            border: "1px solid #edf2f7",
+            backgroundColor: "#f7fafc"
+          }}>
+            {/* 会場マップ画像 */}
             <img 
               src="/map.jpg" 
               alt="スポーツ・デー 会場マップ"
               style={{ width: "100%", height: "auto", display: "block" }}
             />
+
+            {/* マップ上に浮かべるリアルタイム待ち時間ピン群 */}
+            {sports.map((sport) => {
+              // 混雑度によるピンカラー変更
+              let pinColor = "#38a169"; // スムーズ（緑）
+              if (sport.waitingTime > 20) {
+                pinColor = "#e53e3e"; // 混雑（赤）
+              } else if (sport.waitingTime > 0) {
+                pinColor = "#dd6b20"; // やや混雑（オレンジ）
+              }
+
+              // 📍 会場図（map.jpg）に完璧に合わせた実寸座標マッピング
+              let position = { top: "50%", left: "50%" }; 
+
+              const name = sport.name;
+              if (name.includes("モルック")) {
+                position = { top: "21%", left: "28%" };
+              } else if (name.includes("インディアカ")) {
+                position = { top: "21%", left: "71%" };
+              } else if (name.includes("ボッチャ")) {
+                position = { top: "53%", left: "25%" };
+              } else if (name.includes("バブルサッカー") || name.includes("バブル")) {
+                position = { top: "43%", left: "41%" };
+              } else if (name.includes("イントロドン") || name.includes("イントロ")) {
+                position = { top: "65%", left: "37%" };
+              } else if (name.includes("器用3種")) {
+                position = { top: "65%", left: "47%" };
+              } else if (name.includes("気配切り") || name.includes("気配")) {
+                position = { top: "43%", left: "61%" };
+              } else if (name.includes("ダーツ")) {
+                position = { top: "65%", left: "61%" };
+              } else if (name.includes("サバゲー")) {
+                position = { top: "53%", left: "77%" };
+              }
+
+              return (
+                <div
+                  key={`pin-${sport.id}`}
+                  onClick={() => toggleExpand(sport.id)} // タップしたら詳細を開いてスクロール
+                  style={{
+                    position: "absolute",
+                    top: position.top,
+                    left: position.left,
+                    transform: "translate(-50%, -100%)", // ピンの底辺を基準にする
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    cursor: "pointer",
+                    filter: "drop-shadow(0px 3px 5px rgba(0,0,0,0.25))",
+                    zIndex: 10,
+                    transition: "transform 0.15s ease"
+                  }}
+                  onMouseDown={(e) => e.currentTarget.style.transform = "translate(-50%, -100%) scale(0.95)"}
+                  onMouseUp={(e) => e.currentTarget.style.transform = "translate(-50%, -100%) scale(1)"}
+                >
+                  {/* ピン型ポップアップデザイン */}
+                  <div style={{
+                    backgroundColor: "white",
+                    padding: "3px 6px",
+                    borderRadius: "6px",
+                    border: `2px solid ${pinColor}`,
+                    textAlign: "center",
+                    boxShadow: "inset 0 1px 2px rgba(0,0,0,0.05)"
+                  }}>
+                    {/* 種目名 */}
+                    <div style={{ 
+                      fontSize: "7px", 
+                      color: "#4a5568", 
+                      fontWeight: "800", 
+                      lineHeight: "1.1",
+                      maxWidth: "65px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap"
+                    }}>
+                      {sport.name}
+                    </div>
+                    {/* 待ち時間 */}
+                    <div style={{ 
+                      fontSize: "11px", 
+                      fontWeight: "900", 
+                      color: pinColor, 
+                      marginTop: "1px",
+                      lineHeight: "1"
+                    }}>
+                      {sport.waitingTime}
+                      <span style={{ fontSize: "7px", fontWeight: "bold", marginLeft: "1px", color: "#718096" }}>分</span>
+                    </div>
+                  </div>
+                  {/* 三角のしっぽ */}
+                  <div style={{
+                    width: 0,
+                    height: 0,
+                    borderLeft: "5px solid transparent",
+                    borderRight: "5px solid transparent",
+                    borderTop: `5px solid ${pinColor}`,
+                    marginTop: "-1px"
+                  }}></div>
+                </div>
+              );
+            })}
           </div>
+          
           <p style={{ fontSize: "10px", color: "#718096", margin: "8px 0 0 0", lineHeight: "1.4" }}>
-            ※雨天の場合、会場や一部の種目が変更になります。また、諸事情により各種目の位置が変更になる場合があります。
+            ※マップ上の数字ピンをタップすると、下部の該当アトラクション詳細まで直接移動し、開くことができます。
           </p>
         </section>
 
@@ -268,6 +385,7 @@ export default function UserPage() {
               return (
                 <div
                   key={sport.id}
+                  id={`sport-card-${sport.id}`} // スクロールジャンプ用のID
                   style={{
                     backgroundColor: "white",
                     borderRadius: "16px",
@@ -346,7 +464,7 @@ export default function UserPage() {
                                   {formatTime(rev.createdAt)}
                                 </span>
 
-                                {/* 👍 LINE風リアクションエリア（アコーディオン内） */}
+                                {/* 👍 LINE風リアクションエリア */}
                                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "10px" }}>
                                   {REACTION_EMOJIS.map((item) => {
                                     const count = rev.reactions?.[item.key] || 0;
@@ -377,7 +495,7 @@ export default function UserPage() {
                                   })}
                                 </div>
 
-                                {/* 💬 返信一覧（文字色を白から濃いグレー #2d3748 に変更して見やすく修正！） */}
+                                {/* 💬 返信一覧（文字色を濃いグレー #2d3748 にして視認性アップ） */}
                                 {rev.replies && rev.replies.length > 0 && (
                                   <div style={{ backgroundColor: "#f3f4f6", padding: "8px 10px", borderRadius: "8px", display: "flex", flexDirection: "column", gap: "6px", marginTop: "6px", border: "1px solid #e5e7eb" }}>
                                     {rev.replies.map((reply, idx) => (
@@ -433,7 +551,7 @@ export default function UserPage() {
                   <p style={{ fontSize: "13px", color: "#2d3748", margin: "0 0 4px 0", lineHeight: "1.4", fontWeight: "500" }}>{rev.text}</p>
                   <span style={{ fontSize: "9px", color: "#a0aec0", display: "block", marginBottom: "8px" }}>{formatTime(rev.createdAt)}</span>
 
-                  {/* 👍 LINE風リアクションエリア（タイムライン） */}
+                  {/* 👍 LINE風リアクションエリア */}
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "10px" }}>
                     {REACTION_EMOJIS.map((item) => {
                       const count = rev.reactions?.[item.key] || 0;
@@ -464,7 +582,7 @@ export default function UserPage() {
                     })}
                   </div>
 
-                  {/* 💬 返信一覧（文字色を白から濃いグレー #2d3748 に変更して見やすく修正！） */}
+                  {/* 💬 返信一覧 */}
                   {rev.replies && rev.replies.length > 0 && (
                     <div style={{ backgroundColor: "#edf2f7", padding: "8px 10px", borderRadius: "8px", display: "flex", flexDirection: "column", gap: "6px", marginTop: "6px", border: "1px solid #e2e8f0" }}>
                       {rev.replies.map((reply, idx) => (
@@ -500,7 +618,7 @@ export default function UserPage() {
         </section>
       </main>
 
-      {/* ➕ 右下に浮かぶ新規投稿ボタン */}
+      {/* ➕ 新規投稿ボタン */}
       <Link href="/new" style={{
         position: "fixed",
         bottom: "24px",
