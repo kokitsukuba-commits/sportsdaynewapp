@@ -184,7 +184,7 @@ export default function UserPage() {
       <header style={{ 
         background: "linear-gradient(135deg, #6b21a8 0%, #4c1d95 100%)", 
         color: "white", 
-        padding: "32px 16px 28px 16px", 
+        padding: "32px 16px 24px 16px", 
         textAlign: "center", 
         boxShadow: "0 6px 20px rgba(76, 29, 149, 0.15)", 
         borderRadius: "0 0 28px 28px",
@@ -203,25 +203,35 @@ export default function UserPage() {
           gap: "12px", 
           marginBottom: "12px"
         }}>
-          {/* 💥 アップロードしてもらった「unnamed.png」を配置 */}
-          <div style={{
-            flexShrink: 0,
-            filter: `
-              drop-shadow(-1.5px -1.5px 0 #4c1d95)
-              drop-shadow(1.5px -1.5px 0 #4c1d95)
-              drop-shadow(-1.5px 1.5px 0 #4c1d95)
-              drop-shadow(1.5px 1.5px 0 #4c1d95)
-              drop-shadow(3px 3px 0px #a3e635)
-            `
-          }}>
+          {/* 💥 SDの画像（タップすると公式ホームページへジャンプ） */}
+          <a 
+            href="https://www.stb.tsukuba.ac.jp/~spoday/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{
+              display: "block",
+              flexShrink: 0,
+              cursor: "pointer",
+              transition: "transform 0.1s ease",
+              filter: `
+                drop-shadow(-1.5px -1.5px 0 #4c1d95)
+                drop-shadow(1.5px -1.5px 0 #4c1d95)
+                drop-shadow(-1.5px 1.5px 0 #4c1d95)
+                drop-shadow(1.5px 1.5px 0 #4c1d95)
+                drop-shadow(3px 3px 0px #a3e635)
+              `
+            }}
+            onMouseDown={(e) => e.currentTarget.style.transform = "scale(0.92)"}
+            onMouseUp={(e) => e.currentTarget.style.transform = "scale(1)"}
+          >
             <Image 
-              src="/unnamed.png" // ファイル名をunnamed.pngに修正しました！
+              src="/unnamed.png" 
               alt="Tsukuba Sports Day Logo"
               width={55}  
               height={55} 
               style={{ objectFit: "contain" }}
             />
-          </div>
+          </a>
 
           <h1 style={{ 
             fontSize: "26px", 
@@ -241,20 +251,56 @@ export default function UserPage() {
           </h1>
         </div>
 
-        <p style={{ 
-          fontSize: "12px", 
-          backgroundColor: "#a3e635", 
-          color: "#4c1d95", 
-          margin: "0 auto", 
-          fontWeight: "950",
-          padding: "5px 14px",
-          borderRadius: "30px",
-          display: "inline-block",
-          boxShadow: "0 3px 0px #4d7c0f",
-          border: "2px solid #4c1d95"
-        }}>
-          ⚡️ リアルタイム待ち時間 ＆ 会場ガイド
-        </p>
+        {/* サブテキスト＆SNSエリア */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", position: "relative", zIndex: 1 }}>
+          <p style={{ 
+            fontSize: "12px", 
+            backgroundColor: "#a3e635", 
+            color: "#4c1d95", 
+            margin: "0 auto", 
+            fontWeight: "950",
+            padding: "5px 14px",
+            borderRadius: "30px",
+            display: "inline-block",
+            boxShadow: "0 3px 0px #4d7c0f",
+            border: "2px solid #4c1d95"
+          }}>
+            ⚡️ リアルタイム待ち時間 ＆ 会場ガイド
+          </p>
+
+          {/* 📸 公式Instagramボタン */}
+          <a 
+            href="https://www.instagram.com/spoday_tsukuba?igsh=ZXhpZm05eXExdXdu"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              backgroundColor: "#ffffff",
+              color: "#4c1d95",
+              fontSize: "11px",
+              fontWeight: "950",
+              padding: "4px 12px",
+              borderRadius: "20px",
+              border: "2px solid #4c1d95",
+              boxShadow: "0 3px 0px rgba(76, 29, 149, 0.25)",
+              textDecoration: "none",
+              cursor: "pointer",
+              transition: "transform 0.1s ease"
+            }}
+            onMouseDown={(e) => {
+              e.currentTarget.style.transform = "translateY(2px)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+            onMouseUp={(e) => {
+              e.currentTarget.style.transform = "translateY(0px)";
+              e.currentTarget.style.boxShadow = "0 3px 0px rgba(76, 29, 149, 0.25)";
+            }}
+          >
+            <span>📸</span> 公式Instagram
+          </a>
+        </div>
       </header>
 
       {/* 🗺️ 会場エリアマップ */}
