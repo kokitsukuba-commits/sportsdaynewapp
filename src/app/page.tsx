@@ -203,7 +203,7 @@ export default function UserPage() {
           gap: "12px", 
           marginBottom: "12px"
         }}>
-          {/* 💥 トロフィーの代わりにアップロードしてもらった「SD.png」を配置 */}
+          {/* 💥 アップロードしてもらった「unnamed.png」を配置 */}
           <div style={{
             flexShrink: 0,
             filter: `
@@ -215,7 +215,7 @@ export default function UserPage() {
             `
           }}>
             <Image 
-              src="/SD.png" 
+              src="/unnamed.png" // ファイル名をunnamed.pngに修正しました！
               alt="Tsukuba Sports Day Logo"
               width={55}  
               height={55} 
