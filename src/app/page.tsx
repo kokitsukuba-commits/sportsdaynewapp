@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image"; // Next.jsのImageコンポーネントをインポート
+import Image from "next/image"; 
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -11,7 +11,9 @@ import {
   orderBy, 
   doc, 
   updateDoc, 
-  arrayUnion 
+  arrayUnion,
+  increment, // 💥 追加：数値を安全にインクリメントするため
+  setDoc
 } from "firebase/firestore";
 
 interface Sport {
@@ -36,11 +38,11 @@ interface Reply {
 }
 
 interface Reactions {
-  like?: number;    // 👍
-  love?: number;    // ❤️
-  laugh?: number;   // 😆
-  sad?: number;     // 😭
-  fire?: number;    // 🔥
+  like?: number;    
+  love?: number;    
+  laugh?: number;   
+  sad?: number;     
+  fire?: number;    
 }
 
 interface Review {
@@ -74,6 +76,21 @@ export default function UserPage() {
   };
 
   useEffect(() => {
+    // 💥 こっそり閲覧数をカウントアップする処理
+    const trackPageview = async () => {
+      try {
+        const statsRef = doc(db, "analytics", "pageviews");
+        // ドキュメントがまだ存在しない場合も考慮して、merge: true で increment を実行
+        await setDoc(statsRef, {
+          count: increment(1),
+          lastViewedAt: new Date()
+        }, { merge: true });
+      } catch (error) {
+        // ユーザーにエラー画面を見せないように、エラーはコンソールに出さず握りつぶす
+      }
+    };
+    trackPageview();
+
     const qSports = query(collection(db, "sports"), orderBy("name", "asc"));
     const unsubSports = onSnapshot(qSports, (snapshot) => {
       const sportsData: Sport[] = [];
@@ -191,11 +208,9 @@ export default function UserPage() {
         position: "relative",
         overflow: "hidden"
       }}>
-        {/* 背景の丸飾り */}
         <div style={{ position: "absolute", top: "-20px", left: "-20px", width: "80px", height: "80px", borderRadius: "50%", background: "rgba(163, 230, 53, 0.15)" }}></div>
         <div style={{ position: "absolute", bottom: "-30px", right: "-10px", width: "100px", height: "100px", borderRadius: "50%", background: "rgba(163, 230, 53, 0.1)" }}></div>
 
-        {/* 💥 タイトルエリア（ロゴ×ポップ袋文字） */}
         <div style={{ 
           display: "flex", 
           alignItems: "center", 
@@ -203,7 +218,6 @@ export default function UserPage() {
           gap: "12px", 
           marginBottom: "12px"
         }}>
-          {/* 💥 SDの画像（タップすると公式ホームページへジャンプ） */}
           <a 
             href="https://www.stb.tsukuba.ac.jp/~spoday/" 
             target="_blank" 
@@ -251,7 +265,6 @@ export default function UserPage() {
           </h1>
         </div>
 
-        {/* サブテキスト＆SNSエリア */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", position: "relative", zIndex: 1 }}>
           <p style={{ 
             fontSize: "12px", 
@@ -268,7 +281,6 @@ export default function UserPage() {
             ⚡️ リアルタイム待ち時間 ＆ 会場ガイド
           </p>
 
-          {/* 📸 公式Instagramボタン */}
           <a 
             href="https://www.instagram.com/spoday_tsukuba?igsh=ZXhpZm05eXExdXdu"
             target="_blank"
@@ -342,7 +354,6 @@ export default function UserPage() {
             style={{ width: "100%", height: "auto", display: "block" }}
           />
 
-          {/* マップ上の数字ピン */}
           {sports.map((sport) => {
             let pinBg = "#84cc16"; 
             let pinTextColor = "#ffffff";
@@ -425,7 +436,6 @@ export default function UserPage() {
                     <span style={{ fontSize: "10px", marginLeft: "1.5px" }}>分</span>
                   </div>
                 </div>
-                {/* ピンのしっぽ */}
                 <div style={{
                   width: 0,
                   height: 0,
@@ -601,7 +611,6 @@ export default function UserPage() {
                     </div>
 
                     <div style={{ textAlign: "right", minWidth: "85px" }}>
-                      {/* 💥 数字のポップ化 */}
                       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "flex-end" }}>
                         <span style={{ 
                           fontSize: "42px", 
@@ -667,7 +676,6 @@ export default function UserPage() {
                                   {formatTime(rev.createdAt)}
                                 </span>
 
-                                {/* 👍 リアクション */}
                                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "12px" }}>
                                   {REACTION_EMOJIS.map((item) => {
                                     const count = rev.reactions?.[item.key] || 0;
@@ -697,7 +705,6 @@ export default function UserPage() {
                                   })}
                                 </div>
 
-                                {/* 💬 返信 */}
                                 {rev.replies && rev.replies.length > 0 && (
                                   <div style={{ 
                                     backgroundColor: "white", 
@@ -724,7 +731,6 @@ export default function UserPage() {
                                   </div>
                                 )}
 
-                                {/* 💬 返信投稿 */}
                                 <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
                                   <input 
                                     type="text"
@@ -785,7 +791,6 @@ export default function UserPage() {
           boxShadow: "0 6px 0px rgba(107, 33, 168, 0.08)", 
           border: "3px solid #6b21a8" 
         }}>
-          {/* 💥 見出し袋文字化 */}
           <h2 style={{ 
             fontSize: "18px", 
             color: "#6b21a8", 
@@ -818,7 +823,6 @@ export default function UserPage() {
                   <p style={{ fontSize: "13px", color: "#1e1b4b", margin: "0 0 6px 0", lineHeight: "1.5", fontWeight: "700" }}>{rev.text}</p>
                   <span style={{ fontSize: "10px", color: "#9ca3af", display: "block", marginBottom: "10px", fontWeight: "700" }}>{formatTime(rev.createdAt)}</span>
 
-                  {/* 👍 リアクションエリア */}
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "12px" }}>
                     {REACTION_EMOJIS.map((item) => {
                       const count = rev.reactions?.[item.key] || 0;
@@ -846,7 +850,6 @@ export default function UserPage() {
                     })}
                   </div>
 
-                  {/* 💬 返信一覧 */}
                   {rev.replies && rev.replies.length > 0 && (
                     <div style={{ 
                       backgroundColor: "white", 
@@ -871,7 +874,6 @@ export default function UserPage() {
                     </div>
                   )}
 
-                  {/* 💬 返信フォーム */}
                   <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
                     <input 
                       type="text"

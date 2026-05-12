@@ -42,10 +42,17 @@ interface Review {
   replies?: Reply[];
 }
 
+// 💥 追加：アナリティクスデータの型定義
+interface AnalyticsData {
+  count: number;
+  lastViewedAt: any;
+}
+
 export default function AdminPage() {
   const [sports, setSports] = useState<Sport[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null); // 💥 追加：PV数の状態
   const [passcode, setPasscode] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -59,8 +66,29 @@ export default function AdminPage() {
 
   const ADMIN_PASSCODE = "5193";
 
+  // 💥 追加：タイムスタンプを読みやすい形式に変換する関数
+  const formatTimestamp = (timestamp: any) => {
+    if (!timestamp) return "---";
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return date.toLocaleString("ja-JP", {
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
+    });
+  };
+
   useEffect(() => {
     if (!isAuthenticated) return;
+
+    // 💥 追加：閲覧数をリアルタイムに監視する処理
+    const statsRef = doc(db, "analytics", "pageviews");
+    const unsubAnalytics = onSnapshot(statsRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setAnalytics(docSnap.data() as AnalyticsData);
+      }
+    });
 
     const qSports = query(collection(db, "sports"), orderBy("name", "asc"));
     const unsubSports = onSnapshot(qSports, (snapshot) => {
@@ -90,6 +118,7 @@ export default function AdminPage() {
     });
 
     return () => {
+      unsubAnalytics(); // 💥 忘れずにクリーンアップ
       unsubSports();
       unsubAnnouncements();
       unsubReviews();
@@ -138,7 +167,6 @@ export default function AdminPage() {
     }
   };
 
-  // 🗑 つぶやき全体の削除
   const handleDeleteReview = async (id: string, text: string) => {
     const previewText = text.length > 20 ? text.substring(0, 20) + "..." : text;
     if (!confirm(`本当にこのつぶやきを削除しますか？\n「${previewText}」\n※ついてる返信もすべて消去されます。`)) return;
@@ -152,7 +180,6 @@ export default function AdminPage() {
     }
   };
 
-  // 🗑 特定の返信のみ個別削除する処理（新規追加！）
   const handleDeleteReply = async (reviewId: string, replyIndex: number) => {
     const parentReview = reviews.find(r => r.id === reviewId);
     if (!parentReview || !parentReview.replies) return;
@@ -161,7 +188,6 @@ export default function AdminPage() {
     if (!confirm(`本当にこの返信を削除しますか？\n「${replyToDelete.text}」`)) return;
 
     try {
-      // 削除対象のインデックスを外した新しい返信配列を作成
       const updatedReplies = parentReview.replies.filter((_, idx) => idx !== replyIndex);
       
       const reviewRef = doc(db, "reviews", reviewId);
@@ -253,6 +279,32 @@ export default function AdminPage() {
 
       <main style={{ maxWidth: "550px", margin: "0 auto", padding: "20px 16px" }}>
         
+        {/* 💥 新規追加：📊 リアルタイム閲覧数カウンター */}
+        <section style={{ 
+          backgroundColor: "white", 
+          borderRadius: "16px", 
+          padding: "20px", 
+          marginBottom: "24px", 
+          boxShadow: "0 4px 12px rgba(0,0,0,0.03)", 
+          border: "2px solid #5a2575",
+          textAlign: "center"
+        }}>
+          <h2 style={{ fontSize: "15px", color: "#2d3748", fontWeight: "700", margin: "0 0 16px 0", borderBottom: "2px solid #edf2f7", paddingBottom: "6px", textAlign: "left" }}>
+            📊 リアルタイムアクセス状況
+          </h2>
+          
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "baseline", margin: "14px 0" }}>
+            <span style={{ fontSize: "48px", fontWeight: "900", color: "#5a2575", lineHeight: "1" }}>
+              {analytics?.count || 0}
+            </span>
+            <span style={{ fontSize: "14px", fontWeight: "bold", color: "#718096", marginLeft: "4px" }}>PV</span>
+          </div>
+
+          <div style={{ backgroundColor: "#f7fafc", padding: "8px 12px", borderRadius: "8px", border: "1px dashed #cbd5e0", fontSize: "11px", color: "#4a5568", fontWeight: "600" }}>
+            ⏱ 最終アクセス日時: <span style={{ color: "#1a202c", fontWeight: "bold" }}>{formatTimestamp(analytics?.lastViewedAt)}</span>
+          </div>
+        </section>
+        
         {/* 📢 運営からのお知らせ管理セクション */}
         <section style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px", marginBottom: "24px", boxShadow: "0 4px 12px rgba(0,0,0,0.03)", border: "1px solid #cbd5e0" }}>
           <h2 style={{ fontSize: "15px", color: "#2d3748", fontWeight: "700", margin: "0 0 14px 0", borderBottom: "2px solid #5a2575", paddingBottom: "6px" }}>
@@ -341,7 +393,7 @@ export default function AdminPage() {
                     </button>
                   </div>
 
-                  {/* 返信ツリーエリア（返信ごとの個別削除！） */}
+                  {/* 返信ツリーエリア */}
                   {rev.replies && rev.replies.length > 0 && (
                     <div style={{ backgroundColor: "white", borderRadius: "6px", padding: "8px", marginTop: "8px", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: "6px" }}>
                       {rev.replies.map((reply, index) => (
