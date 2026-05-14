@@ -12,7 +12,7 @@ import {
   doc, 
   updateDoc, 
   arrayUnion,
-  increment, // 💥 追加：数値を安全にインクリメントするため
+  increment, 
   setDoc
 } from "firebase/firestore";
 
@@ -76,17 +76,15 @@ export default function UserPage() {
   };
 
   useEffect(() => {
-    // 💥 こっそり閲覧数をカウントアップする処理
     const trackPageview = async () => {
       try {
         const statsRef = doc(db, "analytics", "pageviews");
-        // ドキュメントがまだ存在しない場合も考慮して、merge: true で increment を実行
         await setDoc(statsRef, {
           count: increment(1),
           lastViewedAt: new Date()
         }, { merge: true });
       } catch (error) {
-        // ユーザーにエラー画面を見せないように、エラーはコンソールに出さず握りつぶす
+        // エラーはハンドリングせずスルー
       }
     };
     trackPageview();
@@ -175,6 +173,12 @@ export default function UserPage() {
     }, 150);
   };
 
+  // タイトルクリック時にページをリロードする関数
+  const handleTitleClick = (e: React.MouseEvent) => {
+    e.preventDefault(); // 通常の画面遷移をキャンセル
+    window.location.reload(); // ページを強制再読み込み
+  };
+
   const fontStyle = "'Hiragino Maru Gothic ProN', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif";
 
   if (loading) {
@@ -247,22 +251,26 @@ export default function UserPage() {
             />
           </a>
 
-          <h1 style={{ 
-            fontSize: "26px", 
-            fontWeight: "950", 
-            margin: 0, 
-            letterSpacing: "1.5px", 
-            color: "#ffffff",
-            textShadow: `
-              -2px -2px 0 #4c1d95,  
-               2px -2px 0 #4c1d95,
-              -2px  2px 0 #4c1d95,
-               2px  2px 0 #4c1d95,
-               4px  4px 0 #a3e635
-            `
-          }}>
-            Tsukuba Sports Day
-          </h1>
+          {/* ⚡️ 変更点: Linkで囲み、クリック時に画面が再読み込みされるように設定 */}
+          <Link href="/" onClick={handleTitleClick} style={{ textDecoration: "none" }}>
+            <h1 style={{ 
+              fontSize: "26px", 
+              fontWeight: "950", 
+              margin: 0, 
+              letterSpacing: "1.5px", 
+              color: "#ffffff",
+              cursor: "pointer",
+              textShadow: `
+                -2px -2px 0 #4c1d95,  
+                 2px -2px 0 #4c1d95,
+                -2px  2px 0 #4c1d95,
+                 2px  2px 0 #4c1d95,
+                 4px  4px 0 #a3e635
+              `
+            }}>
+              Tsukuba Sports Day
+            </h1>
+          </Link>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", position: "relative", zIndex: 1 }}>
@@ -413,7 +421,7 @@ export default function UserPage() {
                   backgroundColor: pinBg,
                   padding: "5px 12px",
                   borderRadius: "14px",
-                  border: `2px.5px solid ${pinBorder}`,
+                  border: "2.5px solid #4d7c0f",
                   textAlign: "center",
                   boxShadow: "inset 0 2px 4px rgba(255,255,255,0.3)"
                 }}>
@@ -755,7 +763,7 @@ export default function UserPage() {
                                     style={{ 
                                       backgroundColor: "#a3e635", 
                                       color: "#3f6212", 
-                                      border: "2px.5px solid #4d7c0f", 
+                                      border: "2.5px solid #4d7c0f", 
                                       borderRadius: "10px", 
                                       padding: "8px 16px", 
                                       fontSize: "12px", 
@@ -898,7 +906,7 @@ export default function UserPage() {
                       style={{ 
                         backgroundColor: "#a3e635", 
                         color: "#3f6212", 
-                        border: "2px.5px solid #4d7c0f", 
+                        border: "2.5px solid #4d7c0f", 
                         borderRadius: "10px", 
                         padding: "8px 16px", 
                         fontSize: "12px", 

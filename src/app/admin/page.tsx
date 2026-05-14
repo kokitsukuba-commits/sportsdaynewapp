@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link"; // 💥 追加：再読み込みリンク用のインポート
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -251,6 +252,12 @@ export default function AdminPage() {
     }
   };
 
+  // 💥 追加：タイトルクリック時にページをリロードする関数
+  const handleTitleClick = (e: React.MouseEvent) => {
+    e.preventDefault(); // 通常のルーティング画面遷移をキャンセル
+    window.location.reload(); // ページを強制再読み込み
+  };
+
   if (!isAuthenticated) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", backgroundColor: "#f7f9fc", fontFamily: "sans-serif" }}>
@@ -273,13 +280,20 @@ export default function AdminPage() {
 
   return (
     <div style={{ backgroundColor: "#f7f9fc", minHeight: "100vh", fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif", paddingBottom: "60px" }}>
+      
+      {/* ヘッダーエリア */}
       <header style={{ backgroundColor: "#2d3748", color: "white", padding: "16px", textAlign: "center" }}>
-        <h1 style={{ fontSize: "18px", margin: 0, fontWeight: "bold" }}>⚙️ 運営管理者用コントロールパネル</h1>
+        {/* 💥 変更点：Linkで囲み、クリック時に画面が強制再読み込みされるように設定 */}
+        <Link href="/admin" onClick={handleTitleClick} style={{ textDecoration: "none", color: "inherit" }}>
+          <h1 style={{ fontSize: "18px", margin: 0, fontWeight: "bold", cursor: "pointer", display: "inline-block" }}>
+            ⚙️ 運営管理者用コントロールパネル
+          </h1>
+        </Link>
       </header>
 
       <main style={{ maxWidth: "550px", margin: "0 auto", padding: "20px 16px" }}>
         
-        {/* 💥 新規追加：📊 リアルタイム閲覧数カウンター */}
+        {/* 📊 リアルタイム閲覧数カウンター */}
         <section style={{ 
           backgroundColor: "white", 
           borderRadius: "16px", 
