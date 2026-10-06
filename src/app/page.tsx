@@ -9,12 +9,11 @@ import {
   onSnapshot,
   query,
   orderBy,
-  where,
   doc,
   updateDoc,
   arrayUnion,
   increment,
-  setDoc,
+  setDoc
 } from "firebase/firestore";
 
 interface Sport {
@@ -58,9 +57,9 @@ interface Review {
 const REACTION_EMOJIS = [
   { key: "like", emoji: "👍" },
   { key: "love", emoji: "❤️" },
-  { key: "laugh", emoji: "😂" },
-  { key: "sad", emoji: "🥺" },
-  { key: "fire", emoji: "🔥" },
+  { key: "laugh", emoji: "😆" },
+  { key: "sad", emoji: "😭" },
+  { key: "fire", emoji: "🔥" }
 ] as const;
 
 export default function UserPage() {
@@ -74,91 +73,50 @@ export default function UserPage() {
   const formatTime = (timestamp: any) => {
     if (!timestamp) return "---";
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleTimeString("ja-JP", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return date.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
   };
 
   useEffect(() => {
-    // 閲覧数のトラッキング
     const trackPageview = async () => {
       try {
         const statsRef = doc(db, "analytics", "pageviews");
-        await setDoc(
-          statsRef,
-          { count: increment(1), lastViewedAt: new Date() },
-          { merge: true }
-        );
+        await setDoc(statsRef, {
+          count: increment(1),
+          lastViewedAt: new Date()
+        }, { merge: true });
       } catch (error) {
-        // エラーはスルー
+        // エラーはハンドリングせずスルー
       }
     };
     trackPageview();
 
-    // 種目データの取得
     const qSports = query(collection(db, "sports"), orderBy("name", "asc"));
     const unsubSports = onSnapshot(qSports, (snapshot) => {
       const sportsData: Sport[] = [];
-      snapshot.forEach((docSnap) => {
-        sportsData.push({ ...docSnap.data(), id: docSnap.id } as Sport);
+      snapshot.forEach((doc) => {
+        sportsData.push({ id: doc.id, ...doc.data() } as Sport);
       });
       setSports(sportsData);
     });
 
-    // お知らせデータの取得
-    const qAnnouncements = query(
-      collection(db, "announcements"),
-      orderBy("createdAt", "desc")
-    );
+    const qAnnouncements = query(collection(db, "announcements"), orderBy("createdAt", "desc"));
     const unsubAnnouncements = onSnapshot(qAnnouncements, (snapshot) => {
       const announcementsData: Announcement[] = [];
-      snapshot.forEach((docSnap) => {
-        announcementsData.push({
-          ...docSnap.data(),
-          id: docSnap.id,
-        } as Announcement);
+      snapshot.forEach((doc) => {
+        announcementsData.push({ id: doc.id, ...doc.data() } as Announcement);
       });
       setAnnouncements(announcementsData);
     });
 
-    // 🔒 未アーカイブ(archived != true)の投稿のみを取得
-    const qReviews = query(
-      collection(db, "reviews"),
-      where("archived", "!=", true),
-      orderBy("archived"),
-      orderBy("createdAt", "desc")
-    );
-
-    const unsubReviews = onSnapshot(
-      qReviews,
-      (snapshot) => {
+    const qReviews = query(collection(db, "reviews"), orderBy("createdAt", "desc"));
+    const unsubReviews = onSnapshot(qReviews, (snapshot) => {
         const reviewsData: Review[] = [];
-        snapshot.forEach((docSnap) => {
-          reviewsData.push({ ...docSnap.data(), id: docSnap.id } as Review);
+      snapshot.forEach((doc) => {
+        reviewsData.push({ id: doc.id, ...doc.data() } as Review);
         });
         setReviews(reviewsData);
         setLoading(false);
-      },
-      (error) => {
-        // フォールバック処理
-        const qFallback = query(
-          collection(db, "reviews"),
-          orderBy("createdAt", "desc")
-        );
-        onSnapshot(qFallback, (snapshot) => {
-          const reviewsData: Review[] = [];
-          snapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            if (!data.archived) {
-              reviewsData.push({ ...data, id: docSnap.id } as Review);
-            }
-          });
-          setReviews(reviewsData);
-          setLoading(false);
-        });
-      }
-    );
+    });
 
     return () => {
       unsubSports();
@@ -175,35 +133,31 @@ export default function UserPage() {
       const reviewRef = doc(db, "reviews", reviewId);
       const newReply: Reply = {
         text: replyText,
-        createdAt: new Date().toLocaleTimeString("ja-JP", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
+        createdAt: new Date().toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })
       };
+
       await updateDoc(reviewRef, {
-        replies: arrayUnion(newReply),
+        replies: arrayUnion(newReply)
       });
-      setReplyInputs((prev) => ({ ...prev, [reviewId]: "" }));
+
+      setReplyInputs(prev => ({ ...prev, [reviewId]: "" }));
     } catch (error) {
       console.error(error);
       alert("❌ 返信の送信に失敗しました。");
     }
   };
 
-  const handleAddReaction = async (
-    reviewId: string,
-    reactionKey: keyof Reactions
-  ) => {
+  const handleAddReaction = async (reviewId: string, reactionKey: keyof Reactions) => {
     try {
       const reviewRef = doc(db, "reviews", reviewId);
-      const review = reviews.find((r) => r.id === reviewId);
+      const review = reviews.find(r => r.id === reviewId);
       if (!review) return;
 
       const currentReactions = review.reactions || {};
       const currentCount = currentReactions[reactionKey] || 0;
 
       await updateDoc(reviewRef, {
-        [`reactions.${reactionKey}`]: currentCount + 1,
+        [`reactions.${reactionKey}`]: currentCount + 1
       });
     } catch (error) {
       console.error("リアクションの送信に失敗しました:", error);
@@ -220,112 +174,152 @@ export default function UserPage() {
     }, 150);
   };
 
-  const fontStyle =
-    "'Hiragino Maru Gothic ProN', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif";
+  // タイトルクリック時にページをリロードする関数
+  const handleTitleClick = (e: React.MouseEvent) => {
+    e.preventDefault(); // 通常の画面遷移をキャンセル
+    window.location.reload(); // ページを強制再読み込み
+  };
+
+  const fontStyle = "'Hiragino Maru Gothic ProN', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif";
 
   if (loading) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: fontStyle,
-          color: "#4b5563",
-          backgroundColor: "#f0fdf4",
-        }}
-      >
-        ワクワクを読み込み中...
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", fontFamily: fontStyle, backgroundColor: "#f5f3ff" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ border: "4px solid #e9d8fd", borderTop: "4px solid #7c3aed", borderRadius: "50%", width: "45px", height: "45px", animation: "spin 1s linear infinite", margin: "0 auto 15px auto" }}></div>
+          <p style={{ fontWeight: "950", color: "#6b21a8", fontSize: "16px" }}>ワクワクを読み込み中...</p>
+        </div>
+        <style jsx global>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     );
   }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#f0fdf4",
-        fontFamily: fontStyle,
-        color: "#1e293b",
-        paddingBottom: "80px",
-      }}
-    >
+    <div style={{ backgroundColor: "#fbfbfe", minHeight: "100vh", fontFamily: fontStyle, position: "relative", paddingBottom: "110px", color: "#2d3748" }}>
+      
       {/* ヘッダー */}
-      <header
-        style={{
-          backgroundColor: "#ffffff",
-          borderBottom: "2px solid #bbf7d0",
-          padding: "12px 16px",
-          position: "sticky",
-          top: 0,
-          zIndex: 40,
-          boxShadow: "0 2px 4px rgba(0,0,0,0.02)",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: "600px",
-            margin: "0 auto",
+      <header style={{ 
+        background: "linear-gradient(135deg, #6b21a8 0%, #4c1d95 100%)", 
+        color: "white", 
+        padding: "32px 16px 24px 16px", 
+        textAlign: "center", 
+        boxShadow: "0 6px 20px rgba(76, 29, 149, 0.15)", 
+        borderRadius: "0 0 28px 28px",
+        position: "relative",
+        overflow: "hidden"
+      }}>
+        <div style={{ position: "absolute", top: "-20px", left: "-20px", width: "80px", height: "80px", borderRadius: "50%", background: "rgba(163, 230, 53, 0.15)" }}></div>
+        <div style={{ position: "absolute", bottom: "-30px", right: "-10px", width: "100px", height: "100px", borderRadius: "50%", background: "rgba(163, 230, 53, 0.1)" }}></div>
+
+        <div style={{ 
             display: "flex",
             alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
+          justifyContent: "center", 
+          gap: "12px", 
+          marginBottom: "12px"
+        }}>
           <a
-            href="/"
-            onClick={(e) => {
-              e.preventDefault();
-              window.location.reload();
-            }}
+            href="https://www.stb.tsukuba.ac.jp/~spoday/" 
+            target="_blank" 
+            rel="noopener noreferrer"
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              textDecoration: "none",
+              display: "block",
+              flexShrink: 0,
+              cursor: "pointer",
+              transition: "transform 0.1s ease",
+              filter: `
+                drop-shadow(-1.5px -1.5px 0 #4c1d95)
+                drop-shadow(1.5px -1.5px 0 #4c1d95)
+                drop-shadow(-1.5px 1.5px 0 #4c1d95)
+                drop-shadow(1.5px 1.5px 0 #4c1d95)
+                drop-shadow(3px 3px 0px #a3e635)
+              `
             }}
+            onMouseDown={(e) => e.currentTarget.style.transform = "scale(0.92)"}
+            onMouseUp={(e) => e.currentTarget.style.transform = "scale(1)"}
           >
             <Image
-              src="/SD.png"
-              alt="Logo"
-              width={36}
-              height={36}
-              style={{ borderRadius: "8px" }}
+              src="/unnamed.png" 
+              alt="Tsukuba Sports Day Logo"
+              width={55}  
+              height={55} 
+              style={{ objectFit: "contain" }}
             />
-            <div>
-              <h1
-                style={{
-                  fontSize: "18px",
-                  fontWeight: "bold",
-                  color: "#15803d",
+          </a>
+
+          {/* ⚡️ 変更点: Linkで囲み、クリック時に画面が再読み込みされるように設定 */}
+          <Link href="/" onClick={handleTitleClick} style={{ textDecoration: "none" }}>
+            <h1 style={{ 
+              fontSize: "26px", 
+              fontWeight: "950", 
                   margin: 0,
-                  lineHeight: 1.2,
-                }}
-              >
+              letterSpacing: "1.5px", 
+              color: "#ffffff",
+              cursor: "pointer",
+              textShadow: `
+                -2px -2px 0 #4c1d95,  
+                 2px -2px 0 #4c1d95,
+                -2px  2px 0 #4c1d95,
+                 2px  2px 0 #4c1d95,
+                 4px  4px 0 #a3e635
+              `
+            }}>
                 Tsukuba Sports Day
               </h1>
-              <span style={{ fontSize: "10px", color: "#64748b" }}>
-                ⚡️ リアルタイム待ち時間 ＆ 会場ガイド
-              </span>
+          </Link>
             </div>
-          </a>
+
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", position: "relative", zIndex: 1 }}>
+          <p style={{ 
+            fontSize: "12px", 
+            backgroundColor: "#a3e635", 
+            color: "#4c1d95", 
+            margin: "0 auto", 
+            fontWeight: "950",
+            padding: "5px 14px",
+            borderRadius: "30px",
+            display: "inline-block",
+            boxShadow: "0 3px 0px #4d7c0f",
+            border: "2px solid #4c1d95"
+          }}>
+            ⚡️ リアルタイム待ち時間 ＆ 会場ガイド
+          </p>
 
           <a
             href="https://www.instagram.com/spoday_tsukuba?igsh=ZXhpZm05eXExdXdu"
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              padding: "6px 12px",
-              backgroundColor: "#16a34a",
-              color: "white",
-              borderRadius: "20px",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              backgroundColor: "#ffffff",
+              color: "#4c1d95",
               fontSize: "11px",
-              fontWeight: "bold",
+              fontWeight: "950",
+              padding: "4px 12px",
+              borderRadius: "20px",
+              border: "2px solid #4c1d95",
+              boxShadow: "0 3px 0px rgba(76, 29, 149, 0.25)",
               textDecoration: "none",
-              boxShadow: "0 2px 0 #15803d",
+              cursor: "pointer",
+              transition: "transform 0.1s ease"
+            }}
+            onMouseDown={(e) => {
+              e.currentTarget.style.transform = "translateY(2px)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+            onMouseUp={(e) => {
+              e.currentTarget.style.transform = "translateY(0px)";
+              e.currentTarget.style.boxShadow = "0 3px 0px rgba(76, 29, 149, 0.25)";
             }}
           >
-            📷 公式Insta
+            <span>📸</span> 公式Instagram
           </a>
         </div>
       </header>
