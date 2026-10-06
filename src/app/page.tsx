@@ -55,7 +55,7 @@ interface Review {
   archived?: boolean;
 }
 
-// 初期種目リスト（`page_id=2951` に準拠した種目名および会場）
+// 🎯 最新の種目・会場定義（page_id=2951 準拠）
 const INITIAL_SPORTS = [
   { name: "サバイバルゲーム", location: "中央体育館 武道場" },
   { name: "フリーダムドッジボール", location: "中央体育館 バスケットコートA" },
@@ -94,7 +94,6 @@ export default function UserPage() {
   };
 
   useEffect(() => {
-    // 閲覧数のカウントアップ
     const trackPageview = async () => {
       try {
         const statsRef = doc(db, "analytics", "pageviews");
@@ -109,7 +108,7 @@ export default function UserPage() {
     };
     trackPageview();
 
-    // 種目データの取得
+    // 種目データ取得
     const qSports = query(collection(db, "sports"), orderBy("name", "asc"));
     const unsubSports = onSnapshot(qSports, (snapshot) => {
       const sportsData: Sport[] = [];
@@ -119,7 +118,7 @@ export default function UserPage() {
       setSports(sportsData);
     });
 
-    // お知らせデータの取得
+    // お知らせデータ取得
     const qAnnouncements = query(
       collection(db, "announcements"),
       orderBy("createdAt", "desc")
@@ -135,7 +134,7 @@ export default function UserPage() {
       setAnnouncements(announcementsData);
     });
 
-    // 🔒 未アーカイブの投稿のみ取得（過去データはDBに保持・蓄積して非表示化）
+    // 🔒 投稿アーカイブ制御：archivedがtrueでない（未アーカイブ）投稿のみ取得
     const qReviews = query(
       collection(db, "reviews"),
       where("archived", "!=", true),
@@ -154,7 +153,7 @@ export default function UserPage() {
         setLoading(false);
       },
       () => {
-        // クライアント側フォールバックフィルター
+        // インデックスエラー等のフォールバック（クライアント側でフィルタリング）
         const qFallback = query(
           collection(db, "reviews"),
           orderBy("createdAt", "desc")
@@ -219,7 +218,7 @@ export default function UserPage() {
         [`reactions.${reactionKey}`]: currentCount + 1,
       });
     } catch (error) {
-      console.error("リアクションの送信に失敗しました:", error);
+      console.error("リアクション送信エラー:", error);
     }
   };
 
@@ -254,7 +253,7 @@ export default function UserPage() {
     );
   }
 
-  // 表示する種目データ（Firestoreにデータがない場合は初期種目リストを使用）
+  // 表示する種目データ（Firestoreに種目データがない場合のフォールバック）
   const displaySports =
     sports.length > 0
       ? sports
@@ -356,7 +355,7 @@ export default function UserPage() {
           padding: "16px",
         }}
       >
-        {/* 会場マップ画像エリア（あとからマップ画像を差し込めるプレースホルダー） */}
+        {/* 会場マップ表示（後から画像を設定できるようにスペース確保） */}
         <section style={{ marginBottom: "24px" }}>
           <h2
             style={{
@@ -381,25 +380,18 @@ export default function UserPage() {
               justifyContent: "center",
             }}
           >
-            {/* マップ画像が準備できたら下記のコメントアウトを解除して src="/map.jpg" などを指定できます */}
-            {/* 
-            <img
-              src="/map.jpg"
-              alt="会場マップ"
-              style={{ width: "100%", height: "auto", display: "block" }}
-            />
-            */}
+            {/* 画像準備後に <img src="/map.jpg" alt="会場マップ" style={{ width: "100%", height: "auto" }} /> を配置可能 */}
             <div style={{ textAlign: "center", padding: "20px", color: "#6b21a8" }}>
               <p style={{ fontSize: "28px", margin: "0 0 8px 0" }}>🗺️</p>
               <p style={{ fontSize: "14px", fontWeight: "bold", margin: 0 }}>
-                会場マップ（準備中）
+                会場マップスペース
               </p>
               <p style={{ fontSize: "11px", color: "#9333ea", marginTop: "4px" }}>
-                ※画像ファイルを設置後、ここに自動描画されます
+                ※画像ファイルを配置後、ここに表示されます
               </p>
             </div>
 
-            {/* 種目ピンの動的描画スペース */}
+            {/* 新種目に対応した動的ピン位置 */}
             {displaySports.map((sport) => {
               let pinBg = "#84cc16";
               if (sport.waitingTime > 20) pinBg = "#ef4444";
@@ -481,7 +473,7 @@ export default function UserPage() {
           </section>
         )}
 
-        {/* ⏱ 各アトラクション情報 */}
+        {/* ⏱ 各アトラクション情報（新種目・会場対応） */}
         <section style={{ marginBottom: "24px" }}>
           <h2
             style={{
@@ -604,7 +596,7 @@ export default function UserPage() {
           </div>
         </section>
 
-        {/* 💬 みんなのつぶやき */}
+        {/* 💬 みんなのつぶやき（アーカイブ済み投稿は自動で非表示） */}
         <section>
           <h2
             style={{
@@ -672,7 +664,7 @@ export default function UserPage() {
         </section>
       </main>
 
-      {/* つぶやく浮遊ボタン */}
+      {/* 投稿ボタン */}
       <Link
         href="/new"
         style={{
@@ -689,7 +681,7 @@ export default function UserPage() {
           boxShadow: "0 4px 12px rgba(107, 33, 168, 0.3)",
         }}
       >
-        ✏️ つぶやく
+        ✏️️ つぶやく
       </Link>
     </div>
   );
