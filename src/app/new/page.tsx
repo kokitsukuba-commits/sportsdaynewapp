@@ -2,111 +2,210 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc } from "firebase/firestore";
 
-export default function NewReviewPage() {
+// 🎯 最新の種目選択肢
+const SPORT_OPTIONS = [
+  "全体・その他",
+  "サバイバルゲーム",
+  "フリーダムドッジボール",
+  "スピード3種対決",
+  "イントロドン",
+  "9マス鬼ごっこ",
+  "ダーツ",
+  "モルック",
+  "足つぼPK",
+  "ゴールボール",
+];
+
+export default function NewPostPage() {
   const router = useRouter();
-  const [newReviewText, setNewReviewText] = useState("");
-  const [reviewStatus, setReviewStatus] = useState("");
+  const [selectedSport, setSelectedSport] = useState(SPORT_OPTIONS[0]);
+  const [text, setText] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handlePostReview = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newReviewText.trim()) {
-      alert("口コミ内容を入力してください。");
-      return;
-    }
+    if (!text.trim() || isSubmitting) return;
 
-    setReviewStatus("送信中...");
+    setIsSubmitting(true);
     try {
-      await addDoc(collection(db, "reviews"), {
-        text: newReviewText,
-        createdAt: serverTimestamp(),
-        replies: [] // 返信を格納するための空配列を初期値としてセット
-      });
-      setNewReviewText("");
-      setReviewStatus("🎉 つぶやきを投稿しました！");
+      // 選択した種目名をテキストに含めて投稿
+      const fullText =
+        selectedSport === "全体・その他"
+          ? text.trim()
+          : `【${selectedSport}】${text.trim()}`;
 
-      setTimeout(() => {
-        router.push("/");
-        router.refresh();
-      }, 1500);
+      await addDoc(collection(db, "reviews"), {
+        text: fullText,
+        createdAt: new Date(),
+        archived: false,
+        reactions: {
+          like: 0,
+          love: 0,
+          laugh: 0,
+          sad: 0,
+          fire: 0,
+        },
+      });
+
+      router.push("/");
     } catch (error) {
-      console.error(error);
-      setReviewStatus("❌ 送信に失敗しました。");
+      console.error("投稿エラー:", error);
+      alert("❌ 投稿の送信に失敗しました。");
+      setIsSubmitting(false);
     }
   };
 
+  const fontStyle =
+    "'Hiragino Maru Gothic ProN', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif";
+
   return (
-    <div style={{ backgroundColor: "#f7f9fc", minHeight: "100vh", fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif" }}>
-      <header style={{ backgroundColor: "#5a2575", color: "white", padding: "16px", display: "flex", alignItems: "center" }}>
-        <button 
-          onClick={() => router.back()} 
-          style={{ background: "none", border: "none", color: "white", fontSize: "16px", cursor: "pointer", marginRight: "12px", display: "flex", alignItems: "center" }}
+    <div
+      style={{
+        backgroundColor: "#fbfbfe",
+        minHeight: "100vh",
+        fontFamily: fontStyle,
+        padding: "16px",
+        color: "#2d3748",
+      }}
+    >
+      <div style={{ maxWidth: "500px", margin: "0 auto" }}>
+        {/* ヘッダーナビ */}
+        <div style={{ marginBottom: "20px" }}>
+          <Link
+            href="/"
+            style={{
+              color: "#6b21a8",
+              textDecoration: "none",
+              fontSize: "13px",
+              fontWeight: "bold",
+            }}
+          >
+            ← キャンセル
+          </Link>
+        </div>
+
+        <h1
+          style={{
+            fontSize: "18px",
+            fontWeight: "bold",
+            color: "#4c1d95",
+            marginBottom: "16px",
+          }}
         >
-          ← 戻る
-        </button>
-        <h1 style={{ fontSize: "16px", fontWeight: "700", margin: 0 }}>新規つぶやき投稿</h1>
-      </header>
+          ✏️ つぶやきを投稿する
+        </h1>
 
-      <main style={{ maxWidth: "450px", margin: "0 auto", padding: "24px 16px" }}>
-        <div style={{ backgroundColor: "white", borderRadius: "16px", padding: "20px", boxShadow: "0 4px 12px rgba(0,0,0,0.03)", border: "1px solid #e2e8f0" }}>
-          <h2 style={{ fontSize: "15px", color: "#5a2575", fontWeight: "700", margin: "0 0 4px 0" }}>
-            💬 つぶやきを投稿する
-          </h2>
-          <p style={{ fontSize: "11px", color: "#718096", margin: "0 0 16px 0", lineHeight: "1.4" }}>
-            本文中に<strong>「種目名」</strong>を入れると、各アトラクションの詳細ページにも自動で表示されます！パスコードは不要になりました。
-          </p>
-
-          <form onSubmit={handlePostReview} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            <div>
-              <label style={{ fontSize: "12px", fontWeight: "bold", color: "#4a5568", display: "block", marginBottom: "6px" }}>つぶやき内容</label>
-              <textarea
-                placeholder="バブルサッカーめちゃくちゃ楽しかった！"
-                value={newReviewText}
-                onChange={(e) => setNewReviewText(e.target.value)}
-                rows={5}
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  borderRadius: "8px",
-                  border: "1px solid #cbd5e0",
-                  fontSize: "13px",
-                  resize: "none",
-                  outline: "none",
-                  color: "#1a202c",
-                  backgroundColor: "white",
-                  boxSizing: "border-box"
-                }}
-              />
-            </div>
-
-            <button
-              type="submit"
+        <form
+          onSubmit={handleSubmit}
+          style={{
+            backgroundColor: "white",
+            borderRadius: "16px",
+            padding: "20px",
+            border: "1.5px solid #e2e8f0",
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+          }}
+        >
+          {/* 種目選択 */}
+          <div>
+            <label
               style={{
-                width: "100%",
-                padding: "12px",
-                backgroundColor: "#5a2575",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
+                display: "block",
+                fontSize: "12px",
                 fontWeight: "bold",
-                cursor: "pointer",
-                fontSize: "14px",
-                marginTop: "10px"
+                color: "#475569",
+                marginBottom: "6px",
               }}
             >
-              投稿を送信する
-            </button>
-          </form>
+              対象アトラクション・エリア
+            </label>
+            <select
+              value={selectedSport}
+              onChange={(e) => setSelectedSport(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "10px",
+                borderRadius: "8px",
+                border: "1.5px solid #cbd5e1",
+                fontSize: "13px",
+                outline: "none",
+                backgroundColor: "#ffffff",
+              }}
+            >
+              {SPORT_OPTIONS.map((sport) => (
+                <option key={sport} value={sport}>
+                  {sport}
+                </option>
+              ))}
+            </select>
+          </div>
 
-          {reviewStatus && (
-            <p style={{ marginTop: "16px", fontWeight: "bold", color: "#5a2575", textAlign: "center", fontSize: "13px" }}>
-              {reviewStatus}
-            </p>
-          )}
-        </div>
-      </main>
+          {/* つぶやき内容 */}
+          <div>
+            <label
+              style={{
+                display: "block",
+                fontSize: "12px",
+                fontWeight: "bold",
+                color: "#475569",
+                marginBottom: "6px",
+              }}
+            >
+              つぶやき内容
+            </label>
+            <textarea
+              placeholder="例: サバゲーの待ち列伸びてきた！ / モルックすぐ遊べます！"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              rows={4}
+              maxLength={150}
+              style={{
+                width: "100%",
+                padding: "10px",
+                borderRadius: "8px",
+                border: "1.5px solid #cbd5e1",
+                fontSize: "13px",
+                outline: "none",
+                boxSizing: "border-box",
+              }}
+            />
+            <span
+              style={{
+                fontSize: "10px",
+                color: "#94a3b8",
+                display: "block",
+                textAlign: "right",
+                marginTop: "4px",
+              }}
+            >
+              {text.length}/150字
+            </span>
+          </div>
+
+          {/* 送信ボタン */}
+          <button
+            type="submit"
+            disabled={!text.trim() || isSubmitting}
+            style={{
+              backgroundColor: text.trim() && !isSubmitting ? "#6b21a8" : "#cbd5e1",
+              color: "white",
+              border: "none",
+              borderRadius: "24px",
+              padding: "12px",
+              fontSize: "14px",
+              fontWeight: "bold",
+              cursor: text.trim() && !isSubmitting ? "pointer" : "default",
+            }}
+          >
+            {isSubmitting ? "送信中..." : "投稿する"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
