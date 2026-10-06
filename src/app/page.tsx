@@ -55,11 +55,24 @@ interface Review {
   archived?: boolean;
 }
 
+// 初期種目リスト（`page_id=2951` に準拠した種目名および会場）
+const INITIAL_SPORTS = [
+  { name: "サバイバルゲーム", location: "中央体育館 武道場" },
+  { name: "フリーダムドッジボール", location: "中央体育館 バスケットコートA" },
+  { name: "スピード3種対決", location: "中央体育館 バスケットコートB" },
+  { name: "イントロドン", location: "中央体育館 第一ダンス場" },
+  { name: "9マス鬼ごっこ", location: "中央体育館 ピロティー" },
+  { name: "ダーツ", location: "中央体育館 ピロティー" },
+  { name: "モルック", location: "中央体育館前 芝生エリア" },
+  { name: "足つぼPK", location: "中央体育館前 芝生エリア" },
+  { name: "ゴールボール", location: "中央体育館 体操場" },
+];
+
 const REACTION_EMOJIS = [
   { key: "like", emoji: "👍" },
   { key: "love", emoji: "❤️" },
-  { key: "laugh", emoji: "😂" },
-  { key: "sad", emoji: "🥺" },
+  { key: "laugh", emoji: "😆" },
+  { key: "sad", emoji: "😭" },
   { key: "fire", emoji: "🔥" },
 ] as const;
 
@@ -81,7 +94,7 @@ export default function UserPage() {
   };
 
   useEffect(() => {
-    // 閲覧数のトラッキング
+    // 閲覧数のカウントアップ
     const trackPageview = async () => {
       try {
         const statsRef = doc(db, "analytics", "pageviews");
@@ -91,7 +104,7 @@ export default function UserPage() {
           { merge: true }
         );
       } catch (error) {
-        // エラーはスルー
+        // スルー
       }
     };
     trackPageview();
@@ -122,7 +135,7 @@ export default function UserPage() {
       setAnnouncements(announcementsData);
     });
 
-    // 🔒 未アーカイブ(archived != true)の投稿のみを取得
+    // 🔒 未アーカイブの投稿のみ取得（過去データはDBに保持・蓄積して非表示化）
     const qReviews = query(
       collection(db, "reviews"),
       where("archived", "!=", true),
@@ -140,8 +153,8 @@ export default function UserPage() {
         setReviews(reviewsData);
         setLoading(false);
       },
-      (error) => {
-        // フォールバック処理
+      () => {
+        // クライアント側フォールバックフィルター
         const qFallback = query(
           collection(db, "reviews"),
           orderBy("createdAt", "desc")
@@ -153,10 +166,10 @@ export default function UserPage() {
             if (!data.archived) {
               reviewsData.push({ ...data, id: docSnap.id } as Review);
             }
+          });
+          setReviews(reviewsData);
+          setLoading(false);
         });
-        setReviews(reviewsData);
-        setLoading(false);
-    });
       }
     );
 
@@ -232,35 +245,47 @@ export default function UserPage() {
           alignItems: "center",
           justifyContent: "center",
           fontFamily: fontStyle,
-          color: "#4b5563",
-          backgroundColor: "#f0fdf4",
+          color: "#4c1d95",
+          backgroundColor: "#f5f3ff",
         }}
       >
-        ワクワクを読み込み中...
+        読み込み中...
       </div>
     );
   }
 
+  // 表示する種目データ（Firestoreにデータがない場合は初期種目リストを使用）
+  const displaySports =
+    sports.length > 0
+      ? sports
+      : INITIAL_SPORTS.map((s, idx) => ({
+          id: `default-${idx}`,
+          name: s.name,
+          waitingTime: 0,
+          location: s.location,
+          description: "",
+          updatedAt: new Date(),
+        }));
+
   return (
     <div
       style={{
+        backgroundColor: "#fbfbfe",
         minHeight: "100vh",
-        backgroundColor: "#f0fdf4",
         fontFamily: fontStyle,
-        color: "#1e293b",
-        paddingBottom: "80px",
+        position: "relative",
+        paddingBottom: "110px",
+        color: "#2d3748",
       }}
     >
       {/* ヘッダー */}
       <header
         style={{
-          backgroundColor: "#ffffff",
-          borderBottom: "2px solid #bbf7d0",
-          padding: "12px 16px",
-          position: "sticky",
-          top: 0,
-          zIndex: 40,
-          boxShadow: "0 2px 4px rgba(0,0,0,0.02)",
+          background: "linear-gradient(135deg, #6b21a8 0%, #4c1d95 100%)",
+          color: "white",
+          padding: "20px 16px",
+          textAlign: "center",
+          boxShadow: "0 4px 12px rgba(76, 29, 149, 0.15)",
         }}
       >
         <div
@@ -286,28 +311,22 @@ export default function UserPage() {
             }}
           >
             <Image
-              src="/SD.png"
-              alt="Logo"
-              width={36}
-              height={36}
-              style={{ borderRadius: "8px" }}
+              src="/unnamed.png"
+              alt="Tsukuba Sports Day Logo"
+              width={40}
+              height={40}
+              style={{ objectFit: "contain" }}
             />
-            <div>
-              <h1
-                style={{
-                  fontSize: "18px",
-                  fontWeight: "bold",
-                  color: "#15803d",
-                  margin: 0,
-                  lineHeight: 1.2,
-                }}
-              >
-                Tsukuba Sports Day
-              </h1>
-              <span style={{ fontSize: "10px", color: "#64748b" }}>
-                ⚡️ リアルタイム待ち時間 ＆ 会場ガイド
-              </span>
-            </div>
+            <h1
+              style={{
+                fontSize: "20px",
+                fontWeight: "bold",
+                color: "#ffffff",
+                margin: 0,
+              }}
+            >
+              Tsukuba Sports Day
+            </h1>
           </a>
 
           <a
@@ -316,92 +335,88 @@ export default function UserPage() {
             rel="noopener noreferrer"
             style={{
               padding: "6px 12px",
-              backgroundColor: "#16a34a",
-              color: "white",
+              backgroundColor: "#a3e635",
+              color: "#4c1d95",
               borderRadius: "20px",
               fontSize: "11px",
               fontWeight: "bold",
               textDecoration: "none",
-              boxShadow: "0 2px 0 #15803d",
             }}
           >
-            📷 公式Insta
+            📸 Instagram
           </a>
         </div>
       </header>
 
-      <main style={{ maxWidth: "600px", margin: "0 auto", padding: "16px" }}>
-        {/* 会場エリアマップ */}
-        <section style={{ marginBottom: "20px" }}>
+      {/* メインエリア */}
+      <main
+        style={{
+          maxWidth: "600px",
+          margin: "0 auto",
+          padding: "16px",
+        }}
+      >
+        {/* 会場マップ画像エリア（あとからマップ画像を差し込めるプレースホルダー） */}
+        <section style={{ marginBottom: "24px" }}>
           <h2
             style={{
               fontSize: "16px",
               fontWeight: "bold",
-              color: "#166534",
+              color: "#4c1d95",
               marginBottom: "10px",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
             }}
           >
-            🗺️ 会場マップ
+            🗺️ 会場エリアマップ
           </h2>
           <div
             style={{
               position: "relative",
               borderRadius: "16px",
               overflow: "hidden",
-              border: "3px solid #bbf7d0",
-              boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)",
-              backgroundColor: "#ffffff",
+              border: "2px dashed #a855f7",
+              backgroundColor: "#f3e8ff",
+              minHeight: "350px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
-            <Image
+            {/* マップ画像が準備できたら下記のコメントアウトを解除して src="/map.jpg" などを指定できます */}
+            {/* 
+            <img
               src="/map.jpg"
               alt="会場マップ"
-              width={600}
-              height={400}
               style={{ width: "100%", height: "auto", display: "block" }}
             />
+            */}
+            <div style={{ textAlign: "center", padding: "20px", color: "#6b21a8" }}>
+              <p style={{ fontSize: "28px", margin: "0 0 8px 0" }}>🗺️</p>
+              <p style={{ fontSize: "14px", fontWeight: "bold", margin: 0 }}>
+                会場マップ（準備中）
+              </p>
+              <p style={{ fontSize: "11px", color: "#9333ea", marginTop: "4px" }}>
+                ※画像ファイルを設置後、ここに自動描画されます
+              </p>
+            </div>
 
-            {/* マップピンの動的配置 */}
-            {sports.map((sport) => {
+            {/* 種目ピンの動的描画スペース */}
+            {displaySports.map((sport) => {
               let pinBg = "#84cc16";
-              if (sport.waitingTime > 20) {
-                pinBg = "#ef4444";
-              } else if (sport.waitingTime > 0) {
-                pinBg = "#f97316";
-              }
+              if (sport.waitingTime > 20) pinBg = "#ef4444";
+              else if (sport.waitingTime > 0) pinBg = "#f97316";
 
               let position = { top: "50%", left: "50%" };
               const name = sport.name;
-              const loc = sport.location;
 
-              if (name.includes("サバイバルゲーム")) {
-                position = { top: "35%", left: "30%" };
-              } else if (name.includes("フリーダムドッジボール")) {
-                position = { top: "35%", left: "50%" };
-              } else if (name.includes("スピード3種対決")) {
-                position = { top: "35%", left: "70%" };
-              } else if (name.includes("イントロドン")) {
-                position = { top: "50%", left: "35%" };
-              } else if (name.includes("9マス鬼ごっこ")) {
-                position = { top: "50%", left: "65%" };
-              } else if (name.includes("ダーツ")) {
-                position = { top: "68%", left: "30%" };
-              } else if (name.includes("モルック")) {
-                position = { top: "68%", left: "50%" };
-              } else if (name.includes("足つぼPK")) {
-                position = { top: "68%", left: "70%" };
-              } else if (name.includes("ゴールボール")) {
-                position = { top: "85%", left: "50%" };
-              } else if (loc.includes("バスケ場")) {
-                position = { top: "40%", left: "50%" };
-              } else if (loc.includes("ピロティー")) {
-                position = { top: "65%", left: "50%" };
-              } else if (loc.includes("第一ダンス場")) {
-                position = { top: "85%", left: "50%" };
-              }
+              if (name.includes("サバイバルゲーム")) position = { top: "25%", left: "30%" };
+              else if (name.includes("フリーダムドッジボール")) position = { top: "25%", left: "70%" };
+              else if (name.includes("スピード3種対決")) position = { top: "45%", left: "30%" };
+              else if (name.includes("イントロドン")) position = { top: "45%", left: "70%" };
+              else if (name.includes("9マス鬼ごっこ")) position = { top: "65%", left: "30%" };
+              else if (name.includes("ダーツ")) position = { top: "65%", left: "70%" };
+              else if (name.includes("モルック")) position = { top: "85%", left: "30%" };
+              else if (name.includes("足つぼPK")) position = { top: "85%", left: "70%" };
+              else if (name.includes("ゴールボール")) position = { top: "50%", left: "50%" };
 
               return (
                 <button
@@ -416,12 +431,11 @@ export default function UserPage() {
                     color: "white",
                     border: "2px solid white",
                     borderRadius: "12px",
-                    padding: "3px 8px",
-                    fontSize: "10px",
+                    padding: "4px 8px",
+                    fontSize: "11px",
                     fontWeight: "bold",
                     cursor: "pointer",
                     boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-                    whiteSpace: "nowrap",
                   }}
                 >
                   {sport.name} ({sport.waitingTime}分)
@@ -431,33 +445,33 @@ export default function UserPage() {
           </div>
         </section>
 
-        {/* お知らせ一覧 */}
+        {/* お知らせ */}
         {announcements.length > 0 && (
           <section
             style={{
-              backgroundColor: "#fef3c7",
-              border: "2px solid #fde68a",
+              backgroundColor: "#ffffff",
+              border: "2px solid #e9d8fd",
               borderRadius: "16px",
               padding: "12px 16px",
-              marginBottom: "20px",
+              marginBottom: "24px",
             }}
           >
             <h3
               style={{
                 fontSize: "14px",
                 fontWeight: "bold",
-                color: "#92400e",
+                color: "#6b21a8",
                 margin: "0 0 8px 0",
               }}
             >
-              📢 お知らせ
+              📢 運営からのお知らせ
             </h3>
             {announcements.map((ann) => (
               <div
                 key={ann.id}
                 style={{
                   fontSize: "12px",
-                  color: "#78350f",
+                  color: "#4b5563",
                   marginBottom: "4px",
                 }}
               >
@@ -467,22 +481,22 @@ export default function UserPage() {
           </section>
         )}
 
-        {/* 種目・アトラクション一覧 */}
+        {/* ⏱ 各アトラクション情報 */}
         <section style={{ marginBottom: "24px" }}>
           <h2
             style={{
               fontSize: "16px",
               fontWeight: "bold",
-              color: "#166534",
+              color: "#4c1d95",
               marginBottom: "12px",
             }}
           >
-            ⏱ 待ち時間一覧
+            ⏱ 各アトラクション情報
           </h2>
           <div
-            style={{ display: "flex", flexDirection: "column", gap: "10px" }}
+            style={{ display: "flex", flexDirection: "column", gap: "12px" }}
           >
-            {sports.map((sport) => {
+            {displaySports.map((sport) => {
               const isExpanded = expandedSportId === sport.id;
               const sportReviews = reviews.filter((r) =>
                 r.text.includes(sport.name)
@@ -496,8 +510,7 @@ export default function UserPage() {
                     backgroundColor: "white",
                     borderRadius: "16px",
                     padding: "14px 16px",
-                    border: "2px solid #e2e8f0",
-                    boxShadow: "0 2px 4px rgba(0,0,0,0.02)",
+                    border: isExpanded ? "2.5px solid #6b21a8" : "1.5px solid #e2e8f0",
                   }}
                 >
                   <div
@@ -515,12 +528,12 @@ export default function UserPage() {
                           fontSize: "15px",
                           fontWeight: "bold",
                           margin: "0 0 4px 0",
-                          color: "#0f172a",
+                          color: "#1e1b4b",
                         }}
                       >
                         {sport.name}
                       </h3>
-                      <span style={{ fontSize: "12px", color: "#64748b" }}>
+                      <span style={{ fontSize: "11px", color: "#6b7280" }}>
                         📍 {sport.location}
                       </span>
                     </div>
@@ -528,10 +541,10 @@ export default function UserPage() {
                       style={{
                         backgroundColor:
                           sport.waitingTime === 0
-                            ? "#dcfce7"
+                            ? "#f0fdf4"
                             : sport.waitingTime > 20
-                            ? "#fee2e2"
-                            : "#ffedd5",
+                            ? "#fef2f2"
+                            : "#fff7ed",
                         color:
                           sport.waitingTime === 0
                             ? "#15803d"
@@ -550,57 +563,38 @@ export default function UserPage() {
                     </div>
                   </div>
 
-                  {/* 詳細情報 */}
                   {isExpanded && (
                     <div
                       style={{
                         marginTop: "12px",
                         paddingTop: "12px",
-                        borderTop: "1px dashed #cbd5e1",
+                        borderTop: "1px dashed #e2e8f0",
                       }}
                     >
                       <p
                         style={{
-                          fontSize: "13px",
-                          color: "#334155",
-                          marginBottom: "12px",
-                          lineHeight: "1.5",
+                          fontSize: "12px",
+                          color: "#4b5563",
+                          marginBottom: "10px",
                         }}
                       >
                         {sport.description || "詳細情報は準備中です。"}
                       </p>
-
-                      <div style={{ marginTop: "8px" }}>
-                        <h4
-                          style={{
-                            fontSize: "12px",
-                            fontWeight: "bold",
-                            color: "#475569",
-                            marginBottom: "6px",
-                          }}
-                        >
-                          💬 この種目のリアルタイムつぶやき
-                        </h4>
-                        {sportReviews.length === 0 ? (
-                          <p style={{ fontSize: "11px", color: "#94a3b8" }}>
-                            まだつぶやきはありません。
-                          </p>
-                        ) : (
-                          sportReviews.map((rev) => (
-                            <div
-                              key={rev.id}
-                              style={{
-                                backgroundColor: "#f8fafc",
-                                padding: "8px 10px",
-                                borderRadius: "8px",
-                                fontSize: "12px",
-                                marginBottom: "4px",
-                              }}
-                            >
-                              {rev.text}
-                            </div>
-                          ))
-                        )}
+                      <div style={{ fontSize: "12px" }}>
+                        <strong>💬 リアルタイムつぶやき ({sportReviews.length})</strong>
+                        {sportReviews.map((rev) => (
+                          <div
+                            key={rev.id}
+                            style={{
+                              backgroundColor: "#faf5ff",
+                              padding: "6px 10px",
+                              borderRadius: "8px",
+                              marginTop: "4px",
+                            }}
+                          >
+                            {rev.text}
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
@@ -610,19 +604,18 @@ export default function UserPage() {
           </div>
         </section>
 
-        {/* 💬 リアルタイムつぶやき */}
+        {/* 💬 みんなのつぶやき */}
         <section>
           <h2
             style={{
               fontSize: "16px",
               fontWeight: "bold",
-              color: "#166534",
+              color: "#4c1d95",
               marginBottom: "12px",
             }}
           >
             💬 みんなのつぶやき
           </h2>
-
           {reviews.length === 0 ? (
             <div
               style={{
@@ -630,75 +623,38 @@ export default function UserPage() {
                 padding: "20px",
                 borderRadius: "16px",
                 textAlign: "center",
-                color: "#64748b",
+                color: "#9ca3af",
                 fontSize: "13px",
               }}
             >
-              まだ投稿はありません。「＋つぶやく」から投稿してみよう！
+              現在、表示できるつぶやきはありません。
             </div>
           ) : (
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "10px" }}
-            >
-              {reviews.map((review) => (
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {reviews.map((rev) => (
                 <div
-                  key={review.id}
+                  key={rev.id}
                   style={{
                     backgroundColor: "white",
                     borderRadius: "16px",
-                    padding: "14px 16px",
+                    padding: "12px 14px",
                     border: "1px solid #e2e8f0",
                   }}
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      marginBottom: "6px",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: "11px",
-                        color: "#94a3b8",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      参加者
-                    </span>
-                    <span style={{ fontSize: "10px", color: "#94a3b8" }}>
-                      {formatTime(review.createdAt)}
-                    </span>
-                  </div>
-
-                  <p
-                    style={{
-                      fontSize: "13px",
-                      color: "#1e293b",
-                      margin: "0 0 10px 0",
-                      lineHeight: "1.4",
-                    }}
-                  >
-                    {review.text}
+                  <p style={{ fontSize: "13px", margin: "0 0 8px 0" }}>
+                    {rev.text}
                   </p>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "6px",
-                      marginBottom: "8px",
-                    }}
-                  >
+                  <div style={{ display: "flex", gap: "6px" }}>
                     {REACTION_EMOJIS.map(({ key, emoji }) => {
-                      const count = review.reactions?.[key] || 0;
+                      const count = rev.reactions?.[key] || 0;
                       return (
                         <button
                           key={key}
-                          onClick={() => handleAddReaction(review.id, key)}
+                          onClick={() => handleAddReaction(rev.id, key)}
                           style={{
-                            backgroundColor: "#f1f5f9",
+                            backgroundColor: "#f3e8ff",
                             border: "none",
-                            borderRadius: "12px",
+                            borderRadius: "10px",
                             padding: "4px 8px",
                             fontSize: "11px",
                             cursor: "pointer",
@@ -709,63 +665,6 @@ export default function UserPage() {
                       );
                     })}
                   </div>
-
-                  {review.replies && review.replies.length > 0 && (
-                    <div
-                      style={{
-                        backgroundColor: "#f8fafc",
-                        borderRadius: "8px",
-                        padding: "8px",
-                        marginBottom: "8px",
-                      }}
-                    >
-                      {review.replies.map((reply, idx) => (
-                        <div
-                          key={idx}
-                          style={{ fontSize: "11px", color: "#475569" }}
-                        >
-                          💬 {reply.text}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div style={{ display: "flex", gap: "6px" }}>
-                    <input
-                      type="text"
-                      placeholder="返信を書く..."
-                      value={replyInputs[review.id] || ""}
-                      onChange={(e) =>
-                        setReplyInputs({
-                          ...replyInputs,
-                          [review.id]: e.target.value,
-                        })
-                      }
-                      style={{
-                        flex: 1,
-                        padding: "6px 10px",
-                        borderRadius: "8px",
-                        border: "1px solid #cbd5e1",
-                        fontSize: "11px",
-                        outline: "none",
-                      }}
-                    />
-                    <button
-                      onClick={() => handlePostReply(review.id)}
-                      style={{
-                        backgroundColor: "#16a34a",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "8px",
-                        padding: "6px 10px",
-                        fontSize: "11px",
-                        fontWeight: "bold",
-                        cursor: "pointer",
-                      }}
-                    >
-                      返信
-                    </button>
-                  </div>
                 </div>
               ))}
             </div>
@@ -773,25 +672,21 @@ export default function UserPage() {
         </section>
       </main>
 
-      {/* ＋つぶやく 浮遊ボタン */}
+      {/* つぶやく浮遊ボタン */}
       <Link
         href="/new"
         style={{
           position: "fixed",
           bottom: "20px",
           right: "20px",
-          backgroundColor: "#16a34a",
+          backgroundColor: "#6b21a8",
           color: "white",
           borderRadius: "30px",
           padding: "12px 20px",
           fontSize: "14px",
           fontWeight: "bold",
           textDecoration: "none",
-          boxShadow: "0 4px 12px rgba(22, 163, 74, 0.3)",
-          zIndex: 50,
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
+          boxShadow: "0 4px 12px rgba(107, 33, 168, 0.3)",
         }}
       >
         ✏️ つぶやく
